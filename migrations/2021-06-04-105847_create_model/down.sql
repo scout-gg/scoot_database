@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS civilization;
+DROP TABLE IF EXISTS unit;
+DROP TABLE IF EXISTS technology;
+DROP TABLE IF EXISTS building;

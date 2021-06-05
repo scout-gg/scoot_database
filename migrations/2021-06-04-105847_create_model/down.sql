@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS tech_tree;
 DROP TABLE IF EXISTS civilization;
 DROP TABLE IF EXISTS unit;
 DROP TABLE IF EXISTS technology;

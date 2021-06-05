@@ -1,3 +1,12 @@
+## TODO : 
+
+- Civ to DB
+- Tech tree
+- Civ tech tree
+- Hel texts
+- Rest Api
+- Game Analysis
+
 ## Steam routes
 
 - Steam key
@@ -23,6 +32,9 @@
 
 ## Note
 
-TechTreeID British : 254
+Unique unites :
+26107 -> Longbow (h: 105107)
+26456 -> Elite (h: 105456)
 
-Imperial age + University + Chemistry 47 -> Bombard Tower
+26111 axe 105111
+26461, 6461 Elite axe 105461

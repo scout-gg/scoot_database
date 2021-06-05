@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 log = "0.4.14"
 genie = { git = "https://github.com/SiegeEngineers/genie-rs.git", branch = "feature/aoe2de_support"}
-diesel = { version = "1.4.4", features = ["postgres"] }
+diesel = { version = "1.4.4", features = ["postgres", "64-column-tables", "serde_json"] }
 diesel_migrations = "1.4.0"
 diesel_derives = "1.4.1"
 dotenv = "0.15.0"

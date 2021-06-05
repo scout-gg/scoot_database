@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #[macro_use]
 extern crate diesel;
 #[macro_use]
@@ -7,30 +8,21 @@ extern crate eyre;
 #[macro_use]
 extern crate serde_derive;
 
-
 use std::fs::File;
 
-use diesel::{PgConnection, RunQueryDsl};
 use eyre::Result;
-use genie::dat::DatFile;
-use genie::rec::actions::Action;
 use genie::RecordedGame;
 
-use game_data::key_value::Ao2KeyValues;
-
-use crate::model::civilisation::Civilisation;
-
 pub mod db;
-mod schema;
-pub mod model;
 pub mod game_data;
+pub mod model;
+mod schema;
 
 fn load_game_file(path: &str) -> Result<RecordedGame<File>> {
     let file = File::open(path)?;
 
     RecordedGame::new(file).map_err(|err| eyre!(err))
 }
-
 
 #[cfg(test)]
 mod test {
@@ -42,7 +34,8 @@ mod test {
 
     use crate::load_game_file;
 
-    const TEST_RECORD: &str = "resources/MP Replay v101.101.47820.0 @2021.06.01 064229 (1).aoe2record";
+    const TEST_RECORD: &str =
+        "resources/MP Replay v101.101.47820.0 @2021.06.01 064229 (1).aoe2record";
 
     #[test]
     fn print_game_data() -> Result<()> {
@@ -62,7 +55,7 @@ mod test {
         for act in r.actions().unwrap() {
             match act.unwrap() {
                 Action::Command(cmd) => match cmd {
-                    Command::Research(r) => {  }
+                    Command::Research(r) => {}
                     Command::Build(b) => println!("{:?}", b),
                     Command::Create(c) => println!("{:?}", c),
                     Command::Queue(c) => println!("{:?}", c),

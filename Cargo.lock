@@ -96,6 +96,7 @@ dependencies = [
  "byteorder",
  "diesel_derives",
  "pq-sys",
+ "serde_json",
 ]
 
 [[package]]

@@ -33,9 +33,9 @@ fn main() -> Result<()> {
 
     let unit_file = std::fs::read_to_string("resources/units_buildings_techs.json")?;
     let data: Aoe2Dat = serde_json::from_str(&unit_file)?;
-    &units_to_db(&conn, &values, &data);
-    &building_to_db(&conn, &values, &data);
-    &tech_to_db(&conn, &values, full_data.techs);
+    units_to_db(&conn, &values, &data);
+    building_to_db(&conn, &values, &data);
+    tech_to_db(&conn, &values, full_data.techs);
 
     Ok(())
 }

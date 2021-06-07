@@ -250,8 +250,8 @@ impl CivTechTreeUnitData {
             .filter(|upgrade| upgrade.link_id == self.node_id)
             .filter(|upgrade| upgrade.building_id == self.building_id)
             .find(|upgrade| {
-                (upgrade.node_type == NodeType::UnitUpgrade
-                    || upgrade.node_type == NodeType::UniqueUnit)
+                upgrade.node_type == NodeType::UnitUpgrade
+                    || upgrade.node_type == NodeType::UniqueUnit
             })
             .map(|upgrade| CivTechTreeUnitUpgrade {
                 age: get_age(upgrade.age_id, conn).unwrap(),

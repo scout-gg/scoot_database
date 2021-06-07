@@ -3,10 +3,7 @@ extern crate eyre;
 
 use eyre::Result;
 use scout_gg_backend::db;
-use scout_gg_backend::game_data::tech_tree::{
-    Ao2CivsTechTree, CivTechTreeData, LinkType, NodeStatus, NodeType, TechThreeNode,
-};
-use scout_gg_backend::model::tech_tree::CivTechTree;
+use scout_gg_backend::game_data::tech_tree::{Ao2CivsTechTree, CivTechTreeData};
 
 pub fn main() -> Result<()> {
     let conn = db::establish_connection();

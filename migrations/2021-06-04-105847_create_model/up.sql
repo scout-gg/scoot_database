@@ -1,109 +1,54 @@
+CREATE TABLE help_text
+(
+    id         INT PRIMARY KEY NOT NULL,
+    content_en VARCHAR         NOT NULL,
+    content_fr VARCHAR,
+    content_br VARCHAR,
+    content_de VARCHAR,
+    content_es VARCHAR,
+    content_hi VARCHAR,
+    content_it VARCHAR,
+    content_jp VARCHAR,
+    content_ko VARCHAR,
+    content_ms VARCHAR,
+    content_mx VARCHAR,
+    content_ru VARCHAR,
+    content_tr VARCHAR,
+    content_tw VARCHAR,
+    content_vi VARCHAR,
+    content_zh VARCHAR
+);
+
 CREATE TABLE civilization
 (
-    id      INT PRIMARY KEY,
-    name    VARCHAR NOT NULL,
-    name_fr VARCHAR NOT NULL,
-    name_br VARCHAR NOT NULL,
-    name_de VARCHAR NOT NULL,
-    name_es VARCHAR NOT NULL,
-    name_hi VARCHAR NOT NULL,
-    name_it VARCHAR NOT NULL,
-    name_jp VARCHAR NOT NULL,
-    name_ko VARCHAR NOT NULL,
-    name_ms VARCHAR NOT NULL,
-    name_mx VARCHAR NOT NULL,
-    name_ru VARCHAR NOT NULL,
-    name_tr VARCHAR NOT NULL,
-    name_tw VARCHAR NOT NULL,
-    name_vi VARCHAR NOT NULL,
-    name_zh VARCHAR NOT NULL
+    id   INT PRIMARY KEY,
+    name INT NOT NULL references help_text (id)
 );
 
 CREATE TABLE unit
 (
     id                INT PRIMARY KEY,
-    name              VARCHAR NOT NULL,
-    name_fr           VARCHAR NOT NULL,
-    name_br           VARCHAR NOT NULL,
-    name_de           VARCHAR NOT NULL,
-    name_es           VARCHAR NOT NULL,
-    name_hi           VARCHAR NOT NULL,
-    name_it           VARCHAR NOT NULL,
-    name_jp           VARCHAR NOT NULL,
-    name_ko           VARCHAR NOT NULL,
-    name_ms           VARCHAR NOT NULL,
-    name_mx           VARCHAR NOT NULL,
-    name_ru           VARCHAR NOT NULL,
-    name_tr           VARCHAR NOT NULL,
-    name_tw           VARCHAR NOT NULL,
-    name_vi           VARCHAR NOT NULL,
-    name_zh           VARCHAR NOT NULL,
+    internal_name     VARCHAR                       NOT NULL,
+    name              INT                           NOT NULL references help_text (id) NOT NULL,
+    help_text_short   INT references help_text (id) NOT NULL,
+    help_text         INT references help_text (id) NOT NULL,
 
-    help_text_short              VARCHAR,
-    help_text_short_fr           VARCHAR,
-    help_text_short_br           VARCHAR,
-    help_text_short_de           VARCHAR,
-    help_text_short_es           VARCHAR,
-    help_text_short_hi           VARCHAR,
-    help_text_short_it           VARCHAR,
-    help_text_short_jp           VARCHAR,
-    help_text_short_ko           VARCHAR,
-    help_text_short_ms           VARCHAR,
-    help_text_short_mx           VARCHAR,
-    help_text_short_ru           VARCHAR,
-    help_text_short_tr           VARCHAR,
-    help_text_short_tw           VARCHAR,
-    help_text_short_vi           VARCHAR,
-    help_text_short_zh           VARCHAR,
-
-    help_text              VARCHAR,
-    help_text_fr           VARCHAR,
-    help_text_br           VARCHAR,
-    help_text_de           VARCHAR,
-    help_text_es           VARCHAR,
-    help_text_hi           VARCHAR,
-    help_text_it           VARCHAR,
-    help_text_jp           VARCHAR,
-    help_text_ko           VARCHAR,
-    help_text_ms           VARCHAR,
-    help_text_mx           VARCHAR,
-    help_text_ru           VARCHAR,
-    help_text_tr           VARCHAR,
-    help_text_tw           VARCHAR,
-    help_text_vi           VARCHAR,
-    help_text_zh           VARCHAR,
-
-    wood_cost         INT     NOT NULL,
-    food_cost         INT     NOT NULL,
-    gold_cost         INT     NOT NULL,
-    stone_cost        INT     NOT NULL,
-    attack            INT     NOT NULL,
-    melee_armor       INT     NOT NULL,
-    pierce_armor      INT     NOT NULL,
-    hit_points        INT     NOT NULL,
-    line_of_sight     INT     NOT NULL,
-    garrison_capacity INT     NOT NULL
+    wood_cost         INT                           NOT NULL,
+    food_cost         INT                           NOT NULL,
+    gold_cost         INT                           NOT NULL,
+    stone_cost        INT                           NOT NULL,
+    attack            INT                           NOT NULL,
+    melee_armor       INT                           NOT NULL,
+    pierce_armor      INT                           NOT NULL,
+    hit_points        INT                           NOT NULL,
+    line_of_sight     INT                           NOT NULL,
+    garrison_capacity INT                           NOT NULL
 );
 
 CREATE TABLE building
 (
     id                INT PRIMARY KEY,
-    name              VARCHAR NOT NULL,
-    name_fr           VARCHAR NOT NULL,
-    name_br           VARCHAR NOT NULL,
-    name_de           VARCHAR NOT NULL,
-    name_es           VARCHAR NOT NULL,
-    name_hi           VARCHAR NOT NULL,
-    name_it           VARCHAR NOT NULL,
-    name_jp           VARCHAR NOT NULL,
-    name_ko           VARCHAR NOT NULL,
-    name_ms           VARCHAR NOT NULL,
-    name_mx           VARCHAR NOT NULL,
-    name_ru           VARCHAR NOT NULL,
-    name_tr           VARCHAR NOT NULL,
-    name_tw           VARCHAR NOT NULL,
-    name_vi           VARCHAR NOT NULL,
-    name_zh           VARCHAR NOT NULL,
+    name              INT     NOT NULL references help_text (id),
     wood_cost         INT     NOT NULL,
     food_cost         INT     NOT NULL,
     gold_cost         INT     NOT NULL,
@@ -119,31 +64,41 @@ CREATE TABLE building
 CREATE TABLE technology
 (
     id            INT PRIMARY KEY,
-    name          VARCHAR NOT NULL,
-    name_fr       VARCHAR,
-    name_br       VARCHAR,
-    name_de       VARCHAR,
-    name_es       VARCHAR,
-    name_hi       VARCHAR,
-    name_it       VARCHAR,
-    name_jp       VARCHAR,
-    name_ko       VARCHAR,
-    name_ms       VARCHAR,
-    name_mx       VARCHAR,
-    name_ru       VARCHAR,
-    name_tr       VARCHAR,
-    name_tw       VARCHAR,
-    name_vi       VARCHAR,
-    name_zh       VARCHAR,
+    internal_name     VARCHAR NOT NULL,
+    name          INT NOT NULL references help_text (id),
     building_id   INT REFERENCES building (id),
-    research_time INT NOT NULL ,
-    wood_cost     INT     NOT NULL,
-    food_cost     INT     NOT NULL,
-    gold_cost     INT     NOT NULL,
-    stone_cost    INT     NOT NULL
+    research_time INT NOT NULL,
+    wood_cost     INT NOT NULL,
+    food_cost     INT NOT NULL,
+    gold_cost     INT NOT NULL,
+    stone_cost    INT NOT NULL
 );
 
-CREATE TABLE tech_tree (
-    id INT PRIMARY KEY references civilization(id),
-    civ_tech_tree jsonb NOT NULL
-)
+CREATE TABLE tech_tree_building
+(
+    age               SMALLINT NOT NULL,
+    building_id       INT PRIMARY KEY NOT NULL REFERENCES building (id),
+    enabling_research INT      REFERENCES technology(id),
+    required_building INT REFERENCES building (id),
+    required_tech     INT REFERENCES technology (id)
+);
+
+CREATE TABLE tech_tree_tech
+(
+    age            SMALLINT NOT NULL,
+    tech_id        INT PRIMARY KEY REFERENCES technology (id),
+    required_tech  INT REFERENCES technology (id),
+    upper_building INT      NOT NULL REFERENCES building (id)
+);
+
+
+CREATE TABLE tech_tree_unit
+(
+    age               SMALLINT NOT NULL,
+    unit_id           INT PRIMARY KEY REFERENCES unit (id),
+    required_tech     INT REFERENCES technology (id),
+    upper_building    INT      NOT NULL REFERENCES building (id),
+    parent_unit       INT REFERENCES unit (id),
+    enabling_research INT      REFERENCES technology(id)
+);
+

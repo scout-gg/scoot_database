@@ -1,263 +1,242 @@
-use crate::model::building::Building;
-use crate::model::tech::Tech;
-use crate::model::tech_tree::{
-    CivTechTree, CivTechTreeBuilding, CivTechTreeResearch, CivTechTreeUnit, CivTechTreeUnitUpgrade,
-};
-use crate::model::unit::Unit;
-use diesel::PgConnection;
-use eyre::Result;
+use crate::model::tech_tree_unit::{TechTreeUnit};
+use crate::model::tech_tree_tech::TechTreeResearch;
+use crate::model::tech_tree_building::TechTreeBuilding;
+use std::convert::TryInto;
 
-#[derive(Deserialize, Debug)]
-pub struct Ao2CivsTechTree {
-    pub civs: Vec<CivTechTreeData>,
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct TechTreeDat {
+    pub building_connections: Vec<BuildingConnectionDat>,
+    pub research_connections: Vec<ResearchConnectionDat>,
+    pub tech_tree_ages: Vec<TechTreeAgeDat>,
+    pub unit_connections: Vec<UnitConnectionDat>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct CivTechTreeData {
-    pub civ_id: String,
-    pub civ_techs_buildings: Vec<CivTechTreeBuildingData>,
-    pub civ_techs_units: Vec<CivTechTreeUnitData>,
-}
-
-pub enum TechThreeNode<'a> {
-    Building(&'a CivTechTreeBuildingData),
-    Tech(&'a CivTechTreeUnitData),
-}
-
-#[derive(Deserialize, Debug)]
-pub struct CivTechTreeBuildingData {
-    #[serde(rename = "Age ID")]
-    pub age_id: u8,
-    #[serde(rename = "Name")]
-    pub name: String,
-    #[serde(rename = "Building ID")]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct BuildingConnectionDat {
+    #[serde(rename = "ID")]
     pub building_id: i32,
-    #[serde(rename = "Picture Index")]
-    pub picture_index: i32,
-    #[serde(rename = "Node Status")]
-    pub node_status: NodeStatus,
-    #[serde(rename = "Trigger Tech ID")]
-    pub trigger_tech_id: i32,
-    #[serde(rename = "Link ID")]
-    pub link_id: i32,
-    #[serde(rename = "Link Node Type")]
-    pub link_type: LinkType,
+    pub enabling_research: i32,
+    pub buildings: Vec<i32>,
+    pub units: Vec<i32>,
+    pub techs: Vec<i32>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct CivTechTreeUnitData {
-    #[serde(rename = "Age ID")]
-    pub age_id: u8,
-    #[serde(rename = "Name")]
-    pub name: String,
-    #[serde(rename = "Building ID")]
-    pub building_id: i32,
-    #[serde(rename = "Picture Index")]
-    pub picture_index: i32,
-    #[serde(rename = "Node ID")]
-    pub node_id: i32,
-    #[serde(rename = "Node Status")]
-    pub node_status: NodeStatus,
-    #[serde(rename = "Node Type")]
-    pub node_type: NodeType,
-    #[serde(rename = "Link ID")]
-    pub link_id: i32,
-    #[serde(rename = "Link Node Type")]
-    pub link_type: LinkType,
-    #[serde(rename = "Trigger Tech ID")]
-    pub trigger_tech_id: i32,
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct ResearchConnectionDat {
+    #[serde(rename = "ID")]
+    pub tech_id: i32,
+    pub buildings: Vec<i32>,
+    pub units: Vec<i32>,
+    pub techs: Vec<i32>,
+    pub upper_building: i32,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum NodeStatus {
-    ResearchAvailable,
-    ResearchedCompleted,
-    ResearchRequired,
-    NotAvailable,
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct TechTreeAgeDat {
+    #[serde(rename = "ID")]
+    pub age_id: i32,
+    pub buildings: Vec<i32>,
+    pub units: Vec<i32>,
+    pub techs: Vec<i32>,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum LinkType {
-    Unit,
-    BuildingTech,
-    UnitUpgrade,
-    BuildingNonTech,
-    Research,
-    UniqueUnit,
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct UnitConnectionDat {
+    #[serde(rename = "ID")]
+    pub unit_id: i32,
+    pub required_research: i32,
+    pub enabling_research: i32,
+    pub upper_building: i32,
+    pub units: Vec<i32>,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum NodeType {
-    Unit,
-    BuildingTech,
-    UnitUpgrade,
-    BuildingNonTech,
-    Research,
-    UniqueUnit,
-}
+impl TechTreeDat {
+    pub fn get_buildings(&self) -> Vec<TechTreeBuilding> {
+        self.building_connections.iter().map(|building| {
+            let required_building = self.building_connections.iter()
+                .find(|other| other.buildings.contains(&building.building_id))
+                .map(|building| building.building_id);
 
-impl CivTechTreeData {
-    pub fn to_tech_tree(&self, id: i32, conn: &PgConnection) -> Result<CivTechTree> {
-        let civ_techs_buildings = self
-            .civ_techs_buildings
-            .iter()
-            .map(|tech| tech.to_tech_building(conn, &self).unwrap())
-            .collect();
+            let required_tech: Vec<i32> = self.research_connections.iter()
+                .filter(|research| filter_ages_tech(&research.tech_id))
+                .filter(|research| research.buildings.contains(&building.building_id))
+                .map(|research| research.tech_id)
+                .collect();
 
-        Ok(CivTechTree {
-            civ_id: id,
-            civ_base_name: self.civ_id.to_owned(),
-            civ_techs_buildings,
-        })
-    }
-}
+            assert!(required_tech.len() <= 1);
+            let required_tech = required_tech.first().cloned();
 
-impl CivTechTreeUnitData {
-    pub fn to_tech_unit(
-        &self,
-        conn: &PgConnection,
-        techs: &CivTechTreeData,
-    ) -> Result<CivTechTreeUnit> {
-        Ok(CivTechTreeUnit {
-            age: get_age(self.age_id, conn)?,
-            unit: Unit::by_id(conn, self.node_id)?,
-            upgrade: self.find_unit_upgrade(techs, conn),
-            picture_index: self.picture_index,
-        })
-    }
+            let age = self.tech_tree_ages.iter()
+                .find(|age| age.buildings.contains(&building.building_id))
+                .map(|age| age.age_id)
+                .unwrap();
 
-    pub fn to_tech_tree_research(&self, conn: &PgConnection) -> Result<CivTechTreeResearch> {
-        Ok(CivTechTreeResearch {
-            age: get_age(self.age_id, conn)?,
-            tech: Tech::by_id(conn, self.node_id)?,
-            child: None,
-            picture_index: self.picture_index,
-        })
-    }
-
-    pub fn has_parent(&self) -> bool {
-        self.link_id != -1
-    }
-}
-
-impl CivTechTreeBuildingData {
-    pub fn to_tech_building(
-        &self,
-        conn: &PgConnection,
-        techs: &CivTechTreeData,
-    ) -> Result<CivTechTreeBuilding> {
-        let units = techs
-            .civ_techs_units
-            .iter()
-            .filter(|unit| unit.building_id == self.building_id)
-            .filter(|unit| {
-                unit.node_type == NodeType::Unit || unit.node_type == NodeType::UniqueUnit
-            })
-            .map(|unit| unit.to_tech_unit(conn, techs))
-            .filter_map(Result::ok)
-            .collect();
-
-        let building_researches = techs
-            .civ_techs_units
-            .iter()
-            .filter(|research| self.building_id == research.building_id)
-            .filter(|research| research.node_type == NodeType::Research)
-            .collect();
-
-        let researches = group_researches_by_child(building_researches, conn)?;
-
-        Ok(CivTechTreeBuilding {
-            age: get_age(self.age_id, conn)?,
-            picture_index: self.picture_index,
-            units,
-            name: Building::by_id(conn, self.building_id)?.name,
-            researches,
-        })
-    }
-}
-
-fn group_researches_by_child(
-    mut researches: Vec<&CivTechTreeUnitData>,
-    conn: &PgConnection,
-) -> Result<Vec<CivTechTreeResearch>> {
-    let mut child_nodes = vec![];
-    let mut root_nodes = vec![];
-
-    while let Some(research) = researches.pop() {
-        if research.has_parent() {
-            child_nodes.push(research);
-        } else {
-            root_nodes.push(research.to_tech_tree_research(conn)?);
-        }
-    }
-
-    while !child_nodes.is_empty() {
-        child_nodes.retain(|child| {
-            let parent = root_nodes
-                .iter_mut()
-                .find(|parent| parent.is_in_tree(child.link_id));
-
-            if let Some(parent) = parent {
-                parent.set_child(child.to_tech_tree_research(conn).unwrap());
-                false
+            let enabling_research = if building.enabling_research == -1 {
+                None
             } else {
-                true
+                Some(building.enabling_research)
+            };
+
+            TechTreeBuilding {
+                building_id: building.building_id,
+                enabling_research,
+                required_building,
+                required_tech,
+                age: age.try_into().unwrap(),
             }
+        }).collect()
+    }
+
+    pub fn get_units(&self) -> Vec<TechTreeUnit> {
+        self.unit_connections.iter().map(|unit| {
+            let age = self.tech_tree_ages.iter()
+                .find(|age| age.units.contains(&unit.unit_id)).map(|age| age.age_id);
+
+            match age {
+                None => {
+                    println!("Skipping unit with no age {}", unit.unit_id);
+                    None
+                }
+                Some(age_id) => {
+                    let parent_unit = self.unit_connections.iter()
+                        .find(|parent| parent.units.contains(&unit.unit_id))
+                        .map(|parent| parent.unit_id);
+
+                    let required_tech = self.research_connections.iter()
+                        .filter(|tech| filter_ages_tech(&tech.tech_id))
+                        .find(|tech| tech.units.contains(&unit.unit_id))
+                        .map(|tech| tech.tech_id);
+
+                    let enabling_research = if unit.enabling_research == -1 {
+                        None
+                    } else {
+                        Some(unit.enabling_research)
+                    };
+
+                    Some(TechTreeUnit {
+                        age: age_id.try_into().unwrap(),
+                        unit_id: unit.unit_id,
+                        required_tech,
+                        upper_building: unit.upper_building,
+                        parent_unit,
+                        enabling_research,
+                    })
+                }
+            }
+        })
+            .flatten()
+            .collect()
+    }
+
+    pub fn get_techs(&self) -> Vec<TechTreeResearch> {
+        self.research_connections.iter().map(|tech| {
+            let age = self.tech_tree_ages.iter()
+                .find(|age| age.techs.contains(&tech.tech_id)).map(|age| age.age_id);
+
+            match age {
+                None => {
+                    println!("Skipping tech tree tech with no age {}", tech.tech_id);
+                    None
+                }
+                Some(age_id) => {
+                    let tech_required_tech = self.research_connections.iter()
+                        .filter(|tech| filter_ages_tech(&tech.tech_id))
+                        .find(|tech| tech.techs.contains(&tech.tech_id))
+                        .map(|tech| tech.tech_id);
+
+                    Some(TechTreeResearch {
+                        age: age_id.try_into().unwrap(),
+                        tech_id: tech.tech_id,
+                        required_tech: tech_required_tech,
+                        upper_building: tech.upper_building,
+                    })
+                }
+            }
+        })
+            .flatten()
+            .collect()
+    }
+}
+
+fn filter_ages_tech(id: &i32) -> bool {
+    ![101, 102, 103, 104].contains(id)
+}
+
+
+#[cfg(test)]
+mod test {
+    use crate::game_data::tech_tree::{BuildingConnectionDat, TechTreeDat, ResearchConnectionDat, UnitConnectionDat};
+
+    use eyre::Result;
+
+    #[test]
+    fn a_building_should_have_only_one_parent() -> Result<()> {
+        let data = std::fs::read_to_string("resources/tech.json")?;
+        let data: TechTreeDat = serde_json::from_str(&data)?;
+
+        data.building_connections.iter().for_each(|building| {
+            let required_building: Vec<&BuildingConnectionDat> = data.building_connections.iter()
+                .filter(|other| other.buildings.contains(&building.building_id))
+                .collect();
+            assert!(required_building.len() <= 1);
         });
+
+        Ok(())
     }
 
-    Ok(root_nodes)
-}
+    #[test]
+    fn a_building_should_have_only_one_required_tech() -> Result<()> {
+        let data = std::fs::read_to_string("resources/tech.json")?;
+        let data: TechTreeDat = serde_json::from_str(&data)?;
 
-impl CivTechTreeResearch {
-    fn is_in_tree(&self, link_id: i32) -> bool {
-        if self.tech.id == link_id && self.child.is_none() {
-            true
-        } else {
-            match &self.child {
-                Some(child) => child.is_in_tree(link_id),
-                None => false,
-            }
-        }
+        data.building_connections.iter().for_each(|building| {
+            let required_search: Vec<&ResearchConnectionDat> = data.research_connections.iter()
+                .filter(|research| ![101, 102, 103, 104].contains(&research.tech_id))
+                .filter(|research| research.buildings.contains(&building.building_id))
+                .collect();
+
+            println!("{:?}", required_search);
+            assert!(required_search.len() <= 1);
+        });
+
+        Ok(())
     }
 
-    fn set_child(&mut self, child: CivTechTreeResearch) {
-        if let Some(my_child) = &mut self.child {
-            my_child.set_child(child)
-        } else {
-            self.child = Some(Box::new(child));
-        }
+    #[test]
+    fn a_unit_should_have_only_one_parent() -> Result<()> {
+        let data = std::fs::read_to_string("resources/tech.json")?;
+        let data: TechTreeDat = serde_json::from_str(&data)?;
+
+        data.unit_connections.iter().for_each(|unit| {
+            let parent_units: Vec<&UnitConnectionDat> = data.unit_connections.iter()
+                .filter(|parent| parent.units.contains(&unit.unit_id))
+                .collect();
+
+            assert!(parent_units.len() <= 1);
+        });
+
+        Ok(())
     }
-}
 
-fn get_age(age_id: u8, conn: &PgConnection) -> Result<String> {
-    Ok(if age_id == 1 {
-        "Dark Age".to_string()
-    } else {
-        Tech::by_id(conn, age_id as i32 + 99)?.name
-    })
-}
+    #[test]
+    fn a_unit_should_have_only_one_required_tech() -> Result<()> {
+        let data = std::fs::read_to_string("resources/tech.json")?;
+        let data: TechTreeDat = serde_json::from_str(&data)?;
 
-impl CivTechTreeUnitData {
-    fn find_unit_upgrade<'a>(
-        &'a self,
-        techs: &'a CivTechTreeData,
-        conn: &PgConnection,
-    ) -> Option<CivTechTreeUnitUpgrade> {
-        techs
-            .civ_techs_units
-            .iter()
-            .filter(|upgrade| upgrade.link_id == self.node_id)
-            .filter(|upgrade| upgrade.building_id == self.building_id)
-            .find(|upgrade| {
-                upgrade.node_type == NodeType::UnitUpgrade
-                    || upgrade.node_type == NodeType::UniqueUnit
-            })
-            .map(|upgrade| CivTechTreeUnitUpgrade {
-                age: get_age(upgrade.age_id, conn).unwrap(),
-                tech: Tech::by_id(conn, upgrade.trigger_tech_id).unwrap(),
-                upgrade_to: Box::new(upgrade.to_tech_unit(conn, techs).unwrap()),
-                picture_index: 0,
-            })
+        data.unit_connections.iter().for_each(|unit| {
+            let required_tech: Vec<&ResearchConnectionDat> = data.research_connections.iter()
+                .filter(|research| ![101, 102, 103, 104].contains(&research.tech_id))
+                .filter(|tech| tech.units.contains(&unit.unit_id))
+                .collect();
+
+            assert!(required_tech.len() <= 1);
+        });
+
+        Ok(())
     }
 }

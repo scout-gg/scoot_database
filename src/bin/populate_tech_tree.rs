@@ -3,18 +3,10 @@ extern crate eyre;
 
 use eyre::Result;
 use scout_gg_backend::db;
-use scout_gg_backend::game_data::tech_tree::{Ao2CivsTechTree, CivTechTreeData};
+use scout_gg_backend::game_data::civ_tech_tree::{Ao2CivsTechTree, CivTechTreeData};
 
-pub fn main() -> Result<()> {
-    let conn = db::establish_connection();
+pub fn main() {
 
-    let civs_tech_tree = get_civs_tech_trees()?;
-
-    for (id, tech_tree_data) in civs_tech_tree.iter().enumerate() {
-        let tech_tree = tech_tree_data.to_tech_tree(id as i32, &conn)?;
-        tech_tree.insert(&conn, id as i32 + 1)?;
-    }
-    Ok(())
 }
 
 fn get_civs_tech_trees() -> Result<Vec<CivTechTreeData>> {

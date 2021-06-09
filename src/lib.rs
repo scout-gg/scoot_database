@@ -18,9 +18,8 @@ pub mod game_data;
 pub mod model;
 mod schema;
 
-fn load_game_file(path: &str) -> Result<RecordedGame<File>> {
+fn _load_game_file(path: &str) -> Result<RecordedGame<File>> {
     let file = File::open(path)?;
-
     RecordedGame::new(file).map_err(|err| eyre!(err))
 }
 
@@ -64,5 +63,32 @@ mod test {
                 _ => {}
             }
         }
+    }
+
+
+    use crate::game_data::tech_tree::{TechTreeDat, BuildingConnectionDat};
+
+    #[test]
+    fn test() -> Result<()> {
+        let result = std::fs::read_to_string("resources/tech.json")?;
+        let data: TechTreeDat = serde_json::from_str(&result)?;
+        let tech_with_units: Vec<i32> = data.research_connections.iter()
+            .filter(|tech| !tech.units.is_empty())
+            .map(|tech| tech.tech_id)
+            .collect();
+
+        println!("{:?}", tech_with_units);
+
+
+        let tech_with_techs: Vec<i32> = data.research_connections.iter()
+            .filter(|tech| !tech.techs.is_empty())
+            .map(|tech| tech.tech_id)
+            .collect();
+
+
+        println!("{:?}", tech_with_techs);
+
+
+        Ok(())
     }
 }

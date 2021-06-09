@@ -1,29 +1,17 @@
 use crate::model::building::Building;
 use crate::schema::technology;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
-use eyre::Result;
+use eyre::{Result, Report};
+use crate::model::help_text::HelpText;
+use crate::game_data::key_value::Ao2KeyValues;
 
 #[derive(Queryable, Insertable, Associations, Serialize, Deserialize, PartialEq, Debug)]
 #[table_name = "technology"]
-#[belongs_to(Building)]
+#[belongs_to(Building, TechTreeUnit, TechTreeResearch, TechTreeBuilding)]
 pub struct Tech {
     pub id: i32,
-    pub name: String,
-    pub name_fr: Option<String>,
-    pub name_br: Option<String>,
-    pub name_de: Option<String>,
-    pub name_es: Option<String>,
-    pub name_hi: Option<String>,
-    pub name_it: Option<String>,
-    pub name_jp: Option<String>,
-    pub name_ko: Option<String>,
-    pub name_ms: Option<String>,
-    pub name_mx: Option<String>,
-    pub name_ru: Option<String>,
-    pub name_tr: Option<String>,
-    pub name_tw: Option<String>,
-    pub name_vi: Option<String>,
-    pub name_zh: Option<String>,
+    pub internal_name: String,
+    pub name: i32,
     pub building_id: Option<i32>,
     pub research_time: i32,
     pub wood_cost: i32,
@@ -33,7 +21,13 @@ pub struct Tech {
 }
 
 impl Tech {
-    pub fn insert(conn: &PgConnection, tech: &Tech) -> Result<()> {
+    pub fn insert_with_text(conn: &PgConnection, values: &Ao2KeyValues, tech: &Tech) -> Result<()> {
+        HelpText::insert_from_values(conn, values, tech.name)?;
+
+        Tech::insert(conn, tech)
+    }
+
+    pub fn insert(conn: &PgConnection, tech: &Tech) -> Result<(), Report> {
         diesel::insert_into(technology::table)
             .values(tech)
             .execute(conn)

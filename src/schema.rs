@@ -1,22 +1,8 @@
 table! {
     building (id) {
         id -> Int4,
-        name -> Varchar,
-        name_fr -> Varchar,
-        name_br -> Varchar,
-        name_de -> Varchar,
-        name_es -> Varchar,
-        name_hi -> Varchar,
-        name_it -> Varchar,
-        name_jp -> Varchar,
-        name_ko -> Varchar,
-        name_ms -> Varchar,
-        name_mx -> Varchar,
-        name_ru -> Varchar,
-        name_tr -> Varchar,
-        name_tw -> Varchar,
-        name_vi -> Varchar,
-        name_zh -> Varchar,
+        internal_name -> Varchar,
+        name -> Int4,
         wood_cost -> Int4,
         food_cost -> Int4,
         gold_cost -> Int4,
@@ -33,51 +19,67 @@ table! {
 table! {
     civilization (id) {
         id -> Int4,
-        name -> Varchar,
-        name_fr -> Varchar,
-        name_br -> Varchar,
-        name_de -> Varchar,
-        name_es -> Varchar,
-        name_hi -> Varchar,
-        name_it -> Varchar,
-        name_jp -> Varchar,
-        name_ko -> Varchar,
-        name_ms -> Varchar,
-        name_mx -> Varchar,
-        name_ru -> Varchar,
-        name_tr -> Varchar,
-        name_tw -> Varchar,
-        name_vi -> Varchar,
-        name_zh -> Varchar,
+        name -> Int4,
     }
 }
 
 table! {
-    tech_tree (id) {
+    help_text (id) {
         id -> Int4,
-        civ_tech_tree -> Jsonb,
+        content_en -> Varchar,
+        content_fr -> Nullable<Varchar>,
+        content_br -> Nullable<Varchar>,
+        content_de -> Nullable<Varchar>,
+        content_es -> Nullable<Varchar>,
+        content_hi -> Nullable<Varchar>,
+        content_it -> Nullable<Varchar>,
+        content_jp -> Nullable<Varchar>,
+        content_ko -> Nullable<Varchar>,
+        content_ms -> Nullable<Varchar>,
+        content_mx -> Nullable<Varchar>,
+        content_ru -> Nullable<Varchar>,
+        content_tr -> Nullable<Varchar>,
+        content_tw -> Nullable<Varchar>,
+        content_vi -> Nullable<Varchar>,
+        content_zh -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    tech_tree_building (building_id) {
+        age -> Int2,
+        building_id -> Int4,
+        enabling_research -> Nullable<Int4>,
+        required_building -> Nullable<Int4>,
+        required_tech -> Nullable<Int4>,
+    }
+}
+
+table! {
+    tech_tree_tech (tech_id) {
+        age -> Int2,
+        tech_id -> Int4,
+        required_tech -> Nullable<Int4>,
+        upper_building -> Int4,
+    }
+}
+
+table! {
+    tech_tree_unit (unit_id) {
+        age -> Int2,
+        unit_id -> Int4,
+        required_tech -> Nullable<Int4>,
+        upper_building -> Int4,
+        parent_unit -> Nullable<Int4>,
+        enabling_research -> Nullable<Int4>,
     }
 }
 
 table! {
     technology (id) {
         id -> Int4,
-        name -> Varchar,
-        name_fr -> Nullable<Varchar>,
-        name_br -> Nullable<Varchar>,
-        name_de -> Nullable<Varchar>,
-        name_es -> Nullable<Varchar>,
-        name_hi -> Nullable<Varchar>,
-        name_it -> Nullable<Varchar>,
-        name_jp -> Nullable<Varchar>,
-        name_ko -> Nullable<Varchar>,
-        name_ms -> Nullable<Varchar>,
-        name_mx -> Nullable<Varchar>,
-        name_ru -> Nullable<Varchar>,
-        name_tr -> Nullable<Varchar>,
-        name_tw -> Nullable<Varchar>,
-        name_vi -> Nullable<Varchar>,
-        name_zh -> Nullable<Varchar>,
+        internal_name -> Varchar,
+        name -> Int4,
         building_id -> Nullable<Int4>,
         research_time -> Int4,
         wood_cost -> Int4,
@@ -90,54 +92,10 @@ table! {
 table! {
     unit (id) {
         id -> Int4,
-        name -> Varchar,
-        name_fr -> Varchar,
-        name_br -> Varchar,
-        name_de -> Varchar,
-        name_es -> Varchar,
-        name_hi -> Varchar,
-        name_it -> Varchar,
-        name_jp -> Varchar,
-        name_ko -> Varchar,
-        name_ms -> Varchar,
-        name_mx -> Varchar,
-        name_ru -> Varchar,
-        name_tr -> Varchar,
-        name_tw -> Varchar,
-        name_vi -> Varchar,
-        name_zh -> Varchar,
-        help_text_short -> Nullable<Varchar>,
-        help_text_short_fr -> Nullable<Varchar>,
-        help_text_short_br -> Nullable<Varchar>,
-        help_text_short_de -> Nullable<Varchar>,
-        help_text_short_es -> Nullable<Varchar>,
-        help_text_short_hi -> Nullable<Varchar>,
-        help_text_short_it -> Nullable<Varchar>,
-        help_text_short_jp -> Nullable<Varchar>,
-        help_text_short_ko -> Nullable<Varchar>,
-        help_text_short_ms -> Nullable<Varchar>,
-        help_text_short_mx -> Nullable<Varchar>,
-        help_text_short_ru -> Nullable<Varchar>,
-        help_text_short_tr -> Nullable<Varchar>,
-        help_text_short_tw -> Nullable<Varchar>,
-        help_text_short_vi -> Nullable<Varchar>,
-        help_text_short_zh -> Nullable<Varchar>,
-        help_text -> Nullable<Varchar>,
-        help_text_fr -> Nullable<Varchar>,
-        help_text_br -> Nullable<Varchar>,
-        help_text_de -> Nullable<Varchar>,
-        help_text_es -> Nullable<Varchar>,
-        help_text_hi -> Nullable<Varchar>,
-        help_text_it -> Nullable<Varchar>,
-        help_text_jp -> Nullable<Varchar>,
-        help_text_ko -> Nullable<Varchar>,
-        help_text_ms -> Nullable<Varchar>,
-        help_text_mx -> Nullable<Varchar>,
-        help_text_ru -> Nullable<Varchar>,
-        help_text_tr -> Nullable<Varchar>,
-        help_text_tw -> Nullable<Varchar>,
-        help_text_vi -> Nullable<Varchar>,
-        help_text_zh -> Nullable<Varchar>,
+        internal_name -> Varchar,
+        name -> Int4,
+        help_text_short -> Int4,
+        help_text -> Int4,
         wood_cost -> Int4,
         food_cost -> Int4,
         gold_cost -> Int4,
@@ -151,7 +109,20 @@ table! {
     }
 }
 
-joinable!(tech_tree -> civilization (id));
+joinable!(building -> help_text (name));
+joinable!(civilization -> help_text (name));
+joinable!(tech_tree_tech -> building (upper_building));
+joinable!(tech_tree_unit -> building (upper_building));
 joinable!(technology -> building (building_id));
+joinable!(technology -> help_text (name));
 
-allow_tables_to_appear_in_same_query!(building, civilization, tech_tree, technology, unit,);
+allow_tables_to_appear_in_same_query!(
+    building,
+    civilization,
+    help_text,
+    tech_tree_building,
+    tech_tree_tech,
+    tech_tree_unit,
+    technology,
+    unit,
+);

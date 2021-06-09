@@ -1,27 +1,15 @@
 use crate::schema::building;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use eyre::Result;
+use crate::model::help_text::HelpText;
+use crate::game_data::key_value::Ao2KeyValues;
 
-#[derive(Identifiable, Queryable, Insertable, Serialize, PartialEq, Debug)]
+#[derive(Queryable, Insertable, Serialize, PartialEq, Debug)]
 #[table_name = "building"]
 pub struct Building {
     pub id: i32,
-    pub name: String,
-    pub name_fr: String,
-    pub name_br: String,
-    pub name_de: String,
-    pub name_es: String,
-    pub name_hi: String,
-    pub name_it: String,
-    pub name_jp: String,
-    pub name_ko: String,
-    pub name_ms: String,
-    pub name_mx: String,
-    pub name_ru: String,
-    pub name_tr: String,
-    pub name_tw: String,
-    pub name_vi: String,
-    pub name_zh: String,
+    pub internal_name: String,
+    pub name: i32,
     pub wood_cost: i32,
     pub food_cost: i32,
     pub gold_cost: i32,
@@ -35,7 +23,8 @@ pub struct Building {
 }
 
 impl Building {
-    pub fn insert(conn: &PgConnection, building: &Building) -> Result<Building> {
+    pub fn insert(conn: &PgConnection, values: &Ao2KeyValues, building: &Building) -> Result<Building> {
+        HelpText::insert_from_values(conn, &values, building.name)?;
         diesel::insert_into(building::table)
             .values(building)
             .get_result(conn)

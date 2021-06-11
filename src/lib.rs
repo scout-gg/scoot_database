@@ -31,14 +31,14 @@ mod test {
     use genie::rec::actions::{Action, Command};
     use genie::RecordedGame;
 
-    use crate::load_game_file;
+    use crate::_load_game_file;
 
     const TEST_RECORD: &str =
         "resources/MP Replay v101.101.47820.0 @2021.06.01 064229 (1).aoe2record";
 
     #[test]
     fn print_game_data() -> Result<()> {
-        let mut game = load_game_file(TEST_RECORD);
+        let mut game = _load_game_file(TEST_RECORD);
         print_actions(&mut game?);
 
         Ok(())

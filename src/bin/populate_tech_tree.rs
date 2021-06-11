@@ -2,7 +2,6 @@
 extern crate eyre;
 
 use eyre::Result;
-use scout_gg_backend::db;
 use scout_gg_backend::game_data::civ_tech_tree::{Ao2CivsTechTree, CivTechTreeData};
 
 pub fn main() {

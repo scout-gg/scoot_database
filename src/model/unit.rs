@@ -4,15 +4,15 @@ use eyre::Result;
 use crate::model::help_text::HelpText;
 use crate::game_data::key_value::Ao2KeyValues;
 
-#[derive(Queryable, Insertable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Insertable, Serialize, Deserialize, Debug, Clone)]
 #[table_name = "unit"]
 pub struct Unit {
     pub id: i32,
+    pub unit_type: i32,
     pub internal_name: String,
-    pub name: i32,
-    pub help_text_short: i32,
-    pub help_text: i32,
-
+    pub name: Option<i32>,
+    pub help_text_short: Option<i32>,
+    pub help_text: Option<i32>,
     pub wood_cost: i32,
     pub food_cost: i32,
     pub gold_cost: i32,
@@ -27,17 +27,18 @@ pub struct Unit {
 
 impl Unit {
     pub fn insert(conn: &PgConnection, values: &Ao2KeyValues, unit: &Unit) -> Result<Unit> {
+        let mut unit = unit.clone();
 
-        HelpText::insert_from_values(conn, &values, unit.name)?;
-        HelpText::insert_from_values(conn, &values, unit.help_text)?;
-        HelpText::insert_from_values(conn, &values, unit.help_text_short)?;
+        unit.name = HelpText::insert_from_values(conn, &values, unit.name.unwrap()).ok().map(|h| h.id);
+        unit.help_text = HelpText::insert_from_values(conn, &values, unit.help_text.unwrap()).ok().map(|h| h.id);
+        unit.help_text_short = HelpText::insert_from_values(conn, &values, unit.help_text_short.unwrap()).ok().map(|h| h.id);
 
         diesel::insert_into(unit::table)
-            .values(unit)
+            .values(&unit)
             .get_result(conn)
             .map_err(|err| {
                 eyre!(
-                    "Error inserting unit {} with id {} : {}",
+                    "Error inserting unit {:?} with id {:?} : {}",
                     unit.name,
                     unit.id,
                     err

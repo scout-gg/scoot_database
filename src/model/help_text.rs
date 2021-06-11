@@ -66,7 +66,7 @@ impl HelpText {
                     text.id,
                     err
                 )
-            }).or(HelpText::by_id(conn, text.id))
+            }).or_else(|_|HelpText::by_id(conn, text.id))
     }
 
     pub fn by_id(conn: &PgConnection, id: i32) -> Result<HelpText> {

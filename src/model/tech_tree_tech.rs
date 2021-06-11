@@ -5,8 +5,8 @@ use eyre::Result;
 #[derive(Queryable, Insertable, Associations, Serialize, Deserialize, Debug)]
 #[table_name = "tech_tree_tech"]
 pub struct TechTreeResearch {
+    pub id: i32,
     pub age: i16,
-    pub tech_id: i32,
     pub required_tech: Option<i32>,
     pub upper_building: i32,
 }
@@ -20,7 +20,7 @@ impl TechTreeResearch {
             .map_err(|err| {
                 eyre!(
                     "Error tech_tree_tech with id {} : {}",
-                    tech.tech_id,
+                    tech.id,
                     err
                 )
             })

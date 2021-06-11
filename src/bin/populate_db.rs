@@ -10,7 +10,6 @@ use scout_gg_backend::db;
 use scout_gg_backend::game_data::aoe2dat::{
     Ao2TechData, Aoe2Dat, AoeFullDat, BUILDING, MILITARY_UNITS,
 };
-use scout_gg_backend::model::building::Building;
 use scout_gg_backend::model::civilization::insert_civilization;
 use scout_gg_backend::model::tech::{Tech};
 use scout_gg_backend::model::unit::Unit;
@@ -36,28 +35,25 @@ fn main() -> Result<()> {
     });
 
     // Default help text
-    HelpText::insert(&conn, &no_help_text()).unwrap();
-
     let unit_file = std::fs::read_to_string("resources/units_buildings_techs.json")?;
     let data: Aoe2Dat = serde_json::from_str(&unit_file)?;
     units_to_db(&conn, &values, &data);
-    building_to_db(&conn, &values, &data);
     tech_to_db(&conn, &values, full_data.techs);
 
     // Base tech tree
-    &full_data.tech_tree.get_buildings()
+    full_data.tech_tree.get_buildings()
         .iter().for_each(|b| {
         println!("Inserting {:?}", b);
         TechTreeBuilding::insert(&conn, b).unwrap();
     });
 
-    &full_data.tech_tree.get_techs()
+    full_data.tech_tree.get_techs()
         .iter().for_each(|r| {
         println!("Inserting {:?}", r);
         TechTreeResearch::insert(&conn, r).unwrap();
     });
 
-    &full_data.tech_tree.get_units()
+    full_data.tech_tree.get_units()
         .iter().for_each(|u| {
         println!("Inserting {:?}", u);
         TechTreeUnit::insert(&conn, u).unwrap();
@@ -66,50 +62,12 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn no_help_text() -> HelpText {
-    HelpText {
-        id: -1,
-        content_en: "".to_string(),
-        content_fr: None,
-        content_br: None,
-        content_de: None,
-        content_es: None,
-        content_hi: None,
-        content_it: None,
-        content_jp: None,
-        content_ko: None,
-        content_ms: None,
-        content_mx: None,
-        content_ru: None,
-        content_tr: None,
-        content_tw: None,
-        content_vi: None,
-        content_zh: None,
-    }
-}
-
-fn building_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: &Aoe2Dat) {
-    data.units_buildings
-        .values()
-        .filter(|data| data.unit_type == BUILDING)
-        .map(|building| building.to_building())
-        .for_each(|building| {
-            if let Err(err) = Building::insert(&conn, &values, &building) {
-                eprintln!("{}", err)
-            }
-        });
-}
-
 fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: &Aoe2Dat) {
     data.units_buildings
         .values()
-        .filter(|data| data.unit_type == MILITARY_UNITS)
-        .map(|unit| {
-            println!("{} : {}", unit.name, unit.class);
-            unit
-        })
         .map(|unit| unit.to_unit())
         .for_each(|unit| {
+            println!("Unit or building converter to entity : {} - {:?}, {}", unit.id, unit.name, unit.unit_type);
             if let Err(err) = Unit::insert(&conn, &values, &unit) {
                 eprintln!("{}", err);
             }
@@ -120,7 +78,7 @@ fn tech_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: Vec<Ao2TechData>
     data.iter().enumerate().for_each(|(idx, tech)| {
         let db_tech = tech.to_tech(idx as i32);
         if let Err(err) = Tech::insert_with_text(conn, &values, &db_tech) {
-            eprintln!("tech.id {}, tech.name_helper {}, tech.building: {:?} err {}", db_tech.id, db_tech.name, db_tech.building_id, err);
+            eprintln!("tech.id {}, tech.name_helper {:?}, tech.building: {:?} err {}", db_tech.id, db_tech.name, db_tech.building_id, err);
             let no_text_tech = tech.to_enable_tech(idx as i32);
             Tech::insert(conn, &no_text_tech).unwrap();
         }

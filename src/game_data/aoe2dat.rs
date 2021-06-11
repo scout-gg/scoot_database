@@ -1,5 +1,4 @@
 use crate::game_data::{help_text_offset, short_help_text_offset};
-use crate::model::building::Building;
 use crate::model::civilization::Civilization;
 use crate::model::tech::{Tech};
 use crate::model::unit::Unit;
@@ -65,7 +64,7 @@ impl Ao2TechData {
     pub fn to_enable_tech(&self, id: i32) -> Tech {
         Tech {
             id,
-            name: -1,
+            name: None,
             internal_name: self.name.clone(),
             building_id: self.building_id(),
             research_time: self.research_time,
@@ -86,7 +85,7 @@ impl Ao2TechData {
 
         Tech {
             id,
-            name: self.language_dll_name,
+            name: Some(self.language_dll_name),
             internal_name: self.name.clone(),
             building_id,
             research_time: self.research_time,
@@ -163,12 +162,12 @@ pub struct Aoe2DatUnit {
 
 impl Aoe2DatUnit {
     pub fn to_unit(&self) -> Unit {
-        assert_eq!(self.unit_type, MILITARY_UNITS);
         let short_help_idx = short_help_text_offset(self.language_file_help);
         let help_idx = help_text_offset(self.language_file_help);
 
         Unit {
             id: self.base_id,
+            unit_type: self.unit_type,
             internal_name: self.name.clone(),
             wood_cost: self.cost.wood,
             food_cost: self.cost.food,
@@ -180,28 +179,9 @@ impl Aoe2DatUnit {
             hit_points: self.hit_points,
             line_of_sight: self.line_of_sight,
             garrison_capacity: self.garrison_capacity,
-            name: self.language_file_name,
-            help_text_short: short_help_idx,
-            help_text: help_idx,
-        }
-    }
-
-    pub fn to_building(&self) -> Building {
-        assert_eq!(self.unit_type, BUILDING);
-        Building {
-            id: self.base_id,
-            internal_name: self.name.clone(),
-            name: self.language_file_name,
-            wood_cost: self.cost.wood,
-            food_cost: self.cost.food,
-            gold_cost: self.cost.wood,
-            stone_cost: self.cost.stone,
-            attack: self.attack,
-            melee_armor: self.melee_armor,
-            pierce_armor: self.pierce_armor,
-            hit_points: 0,
-            line_of_sight: 0,
-            garrison_capacity: 0,
+            name: Some(self.language_file_name),
+            help_text_short: Some(short_help_idx),
+            help_text: Some(help_idx),
         }
     }
 }

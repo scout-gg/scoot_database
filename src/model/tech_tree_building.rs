@@ -5,8 +5,8 @@ use crate::schema::tech_tree_building;
 #[derive(Queryable, Associations, Insertable, Serialize, Deserialize, Debug)]
 #[table_name = "tech_tree_building"]
 pub struct TechTreeBuilding {
+    pub id: i32,
     pub age: i16,
-    pub building_id: i32,
     pub enabling_research: Option<i32>,
     pub required_building: Option<i32>,
     pub required_tech: Option<i32>,
@@ -20,7 +20,7 @@ impl TechTreeBuilding {
             .map_err(|err| {
                 eyre!(
                     "Error tech_tree_building with id {} : {}",
-                    building.building_id,
+                    building.id,
                     err
                 )
             })

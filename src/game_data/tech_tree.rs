@@ -83,7 +83,7 @@ impl TechTreeDat {
             };
 
             TechTreeBuilding {
-                building_id: building.building_id,
+                id: building.building_id,
                 enabling_research,
                 required_building,
                 required_tech,
@@ -120,7 +120,7 @@ impl TechTreeDat {
 
                     Some(TechTreeUnit {
                         age: age_id.try_into().unwrap(),
-                        unit_id: unit.unit_id,
+                        id: unit.unit_id,
                         required_tech,
                         upper_building: unit.upper_building,
                         parent_unit,
@@ -145,13 +145,13 @@ impl TechTreeDat {
                 }
                 Some(age_id) => {
                     let tech_required_tech = self.research_connections.iter()
-                        .filter(|tech| filter_ages_tech(&tech.tech_id))
-                        .find(|tech| tech.techs.contains(&tech.tech_id))
-                        .map(|tech| tech.tech_id);
+                        .filter(|parent_tech| filter_ages_tech(&parent_tech.tech_id))
+                        .find(|parent_tech| parent_tech.techs.contains(&tech.tech_id))
+                        .map(|parent_tech| parent_tech.tech_id);
 
                     Some(TechTreeResearch {
                         age: age_id.try_into().unwrap(),
-                        tech_id: tech.tech_id,
+                        id: tech.tech_id,
                         required_tech: tech_required_tech,
                         upper_building: tech.upper_building,
                     })
@@ -235,6 +235,25 @@ mod test {
                 .collect();
 
             assert!(required_tech.len() <= 1);
+        });
+
+        Ok(())
+    }
+
+
+    #[test]
+    fn bracer_should_require_bodkin_arrow() -> Result<()> {
+        let bracers_id = 201;
+        let bodkin_arrow = 200;
+        let data = std::fs::read_to_string("resources/tech.json")?;
+        let data: TechTreeDat = serde_json::from_str(&data)?;
+
+        data.unit_connections.iter().for_each(|unit| {
+            let bodkin_arrow = data.research_connections.iter()
+                .find(|tech| tech.tech_id == bodkin_arrow)
+                .unwrap();
+
+            assert!(bodkin_arrow.techs.contains(&bracers_id));
         });
 
         Ok(())

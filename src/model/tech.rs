@@ -1,16 +1,16 @@
+use crate::game_data::key_value::Ao2KeyValues;
+use crate::model::help_text::HelpText;
 use crate::schema::technology;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
-use eyre::{Result, Report};
-use crate::model::help_text::HelpText;
-use crate::game_data::key_value::Ao2KeyValues;
+use eyre::{Report, Result};
 
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "technology"]
 pub struct Tech {
     pub id: i32,
+    pub age: i16,
     pub internal_name: String,
     pub name: Option<i32>,
-    pub building_id: Option<i32>,
     pub research_time: i32,
     pub wood_cost: i32,
     pub food_cost: i32,
@@ -21,7 +21,9 @@ pub struct Tech {
 impl Tech {
     pub fn insert_with_text(conn: &PgConnection, values: &Ao2KeyValues, tech: &Tech) -> Result<()> {
         let mut tech = tech.clone();
-        tech.name = HelpText::insert_from_values(conn, values, tech.name.unwrap()).ok().map(|h| h.id);
+        tech.name = HelpText::insert_from_values(conn, values, tech.name.unwrap())
+            .ok()
+            .map(|h| h.id);
 
         Tech::insert(conn, &tech)
     }

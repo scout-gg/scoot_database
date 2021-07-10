@@ -1,10 +1,11 @@
+use crate::game_data::tech_tree::TechTreeDat;
 use crate::game_data::{help_text_offset, short_help_text_offset};
 use crate::model::civilization::Civilization;
-use crate::model::tech::{Tech};
+use crate::model::tech::Tech;
 use crate::model::unit::Unit;
+use crate::TECHS;
 use serde_json::Value;
 use std::collections::HashMap;
-use crate::game_data::tech_tree::TechTreeDat;
 
 pub const MILITARY_UNITS: i32 = 70;
 pub const BUILDING: i32 = 80;
@@ -66,12 +67,12 @@ impl Ao2TechData {
             id,
             name: None,
             internal_name: self.name.clone(),
-            building_id: self.building_id(),
             research_time: self.research_time,
             wood_cost: self.wood(),
             food_cost: self.food(),
             gold_cost: self.gold(),
-            stone_cost: self.stone()
+            stone_cost: self.stone(),
+            age: TECHS.get_tech_age(id),
         }
     }
 
@@ -81,32 +82,21 @@ impl Ao2TechData {
         let gold = self.gold();
         let stone = self.stone();
 
-        let building_id = self.building_id();
-
         Tech {
             id,
             name: Some(self.language_dll_name),
             internal_name: self.name.clone(),
-            building_id,
             research_time: self.research_time,
             wood_cost: wood,
             food_cost: food,
             gold_cost: gold,
             stone_cost: stone,
-        }
-    }
-
-    fn building_id(&self) -> Option<i32> {
-        if self.building <= 0 {
-            None
-        } else {
-            Some(self.building)
+            age: TECHS.get_tech_age(id),
         }
     }
 
     fn food(&self) -> i32 {
-        self
-            .cost
+        self.cost
             .iter()
             .find(|cost| cost.resource_type == FOOD)
             .map(|cost| cost.amount)
@@ -114,8 +104,7 @@ impl Ao2TechData {
     }
 
     fn wood(&self) -> i32 {
-        self
-            .cost
+        self.cost
             .iter()
             .find(|cost| cost.resource_type == WOOD)
             .map(|cost| cost.amount)
@@ -123,8 +112,7 @@ impl Ao2TechData {
     }
 
     fn gold(&self) -> i32 {
-        self
-            .cost
+        self.cost
             .iter()
             .find(|cost| cost.resource_type == GOLD)
             .map(|cost| cost.amount)
@@ -132,8 +120,7 @@ impl Ao2TechData {
     }
 
     fn stone(&self) -> i32 {
-        self
-            .cost
+        self.cost
             .iter()
             .find(|cost| cost.resource_type == STONE)
             .map(|cost| cost.amount)
@@ -167,6 +154,7 @@ impl Aoe2DatUnit {
 
         Unit {
             id: self.base_id,
+            age: TECHS.get_unit_age(self.base_id),
             unit_type: self.unit_type,
             internal_name: self.name.clone(),
             wood_cost: self.cost.wood,

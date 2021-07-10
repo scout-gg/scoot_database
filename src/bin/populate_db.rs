@@ -7,18 +7,16 @@ use diesel::PgConnection;
 use diesel_migrations::embed_migrations;
 use eyre::Result;
 use scout_gg_backend::db;
-use scout_gg_backend::game_data::aoe2dat::{
-    Ao2TechData, Aoe2Dat, AoeFullDat, BUILDING, MILITARY_UNITS,
-};
+use scout_gg_backend::game_data::aoe2dat::{Ao2TechData, Aoe2Dat, AoeFullDat};
 use scout_gg_backend::model::civilization::insert_civilization;
-use scout_gg_backend::model::tech::{Tech};
+use scout_gg_backend::model::links::{
+    TechRequiredTech, TechRequiredUnit, UnitRequiredTech, UnitRequiredUnit,
+};
+use scout_gg_backend::model::tech::Tech;
 use scout_gg_backend::model::unit::Unit;
-use scout_gg_backend::model::tech_tree_building::TechTreeBuilding;
-use scout_gg_backend::model::tech_tree_unit::TechTreeUnit;
-use scout_gg_backend::model::tech_tree_tech::TechTreeResearch;
-use scout_gg_backend::model::help_text::HelpText;
+use scout_gg_backend::TECHS;
 
-embed_migrations!("migrations/");
+embed_migrations!();
 
 fn main() -> Result<()> {
     copy_game_files()?;
@@ -39,26 +37,7 @@ fn main() -> Result<()> {
     let data: Aoe2Dat = serde_json::from_str(&unit_file)?;
     units_to_db(&conn, &values, &data);
     tech_to_db(&conn, &values, full_data.techs);
-
-    // Base tech tree
-    full_data.tech_tree.get_buildings()
-        .iter().for_each(|b| {
-        println!("Inserting {:?}", b);
-        TechTreeBuilding::insert(&conn, b).unwrap();
-    });
-
-    full_data.tech_tree.get_techs()
-        .iter().for_each(|r| {
-        println!("Inserting {:?}", r);
-        TechTreeResearch::insert(&conn, r).unwrap();
-    });
-
-    full_data.tech_tree.get_units()
-        .iter().for_each(|u| {
-        println!("Inserting {:?}", u);
-        TechTreeUnit::insert(&conn, u).unwrap();
-    });
-
+    links_to_db(&conn)?;
     Ok(())
 }
 
@@ -67,24 +46,50 @@ fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: &Aoe2Dat) {
         .values()
         .map(|unit| unit.to_unit())
         .for_each(|unit| {
-            println!("Unit or building converter to entity : {} - {:?}, {}", unit.id, unit.name, unit.unit_type);
+            println!(
+                "Unit or building converter to entity : {} - {:?}, {}",
+                unit.id, unit.name, unit.unit_type
+            );
             if let Err(err) = Unit::insert(&conn, &values, &unit) {
                 eprintln!("{}", err);
             }
         });
 }
 
+fn links_to_db(conn: &PgConnection) -> Result<()> {
+    for unit_tech_link in TECHS.get_unit_techs_link() {
+        UnitRequiredTech::insert(conn, &unit_tech_link)?;
+    }
+
+    for tech_tech_link in TECHS.get_tech_required_tech() {
+        // Ignore duplicate violation and keep going
+        let _ = TechRequiredTech::insert(conn, &tech_tech_link);
+    }
+
+    for unit_unit_link in TECHS.get_unit_unit_link() {
+        // Ignore duplicate violation and keep going
+        let _ = UnitRequiredUnit::insert(conn, &unit_unit_link);
+    }
+
+    for tech_required_unit in TECHS.get_tech_unit_links() {
+        let _ = TechRequiredUnit::insert(conn, &tech_required_unit);
+    }
+
+    Ok(())
+}
+
 fn tech_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: Vec<Ao2TechData>) {
     data.iter().enumerate().for_each(|(idx, tech)| {
         let db_tech = tech.to_tech(idx as i32);
         if let Err(err) = Tech::insert_with_text(conn, &values, &db_tech) {
-            eprintln!("tech.id {}, tech.name_helper {:?}, tech.building: {:?} err {}", db_tech.id, db_tech.name, db_tech.building_id, err);
+            eprintln!("Found tech with no text helper, inserting \"enable tech\" instead :  tech.id {}, tech.name_helper {:?}, err {}", db_tech.id, db_tech.name, err);
             let no_text_tech = tech.to_enable_tech(idx as i32);
             Tech::insert(conn, &no_text_tech).unwrap();
         }
     });
 }
 
+// Extract game data before hydrating  the database
 fn copy_game_files() -> Result<()> {
     let home = std::env!("HOME");
     let resources_path = format!("{}/.steam/steam/steamapps/common/AoE2DE/resources/", home);

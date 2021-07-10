@@ -25,65 +25,63 @@ CREATE TABLE civilization
     name INT NOT NULL references help_text (id)
 );
 
-CREATE TABLE unit
-(
-    id                INT PRIMARY KEY,
-    unit_type         INT     NOT NULL,
-    internal_name     VARCHAR NOT NULL,
-    name              INT references help_text (id),
-    help_text_short   INT references help_text (id),
-    help_text         INT references help_text (id),
-
-    wood_cost         INT     NOT NULL,
-    food_cost         INT     NOT NULL,
-    gold_cost         INT     NOT NULL,
-    stone_cost        INT     NOT NULL,
-    attack            INT     NOT NULL,
-    melee_armor       INT     NOT NULL,
-    pierce_armor      INT     NOT NULL,
-    hit_points        INT     NOT NULL,
-    line_of_sight     INT     NOT NULL,
-    garrison_capacity INT     NOT NULL
-);
-
 CREATE TABLE technology
 (
     id            INT PRIMARY KEY,
-    internal_name VARCHAR NOT NULL,
+    age           SMALLINT NOT NULL,
+    internal_name VARCHAR  NOT NULL,
     name          INT references help_text (id),
-    building_id   INT REFERENCES unit (id),
-    research_time INT     NOT NULL,
-    wood_cost     INT     NOT NULL,
-    food_cost     INT     NOT NULL,
-    gold_cost     INT     NOT NULL,
-    stone_cost    INT     NOT NULL
+    research_time INT      NOT NULL,
+    wood_cost     INT      NOT NULL,
+    food_cost     INT      NOT NULL,
+    gold_cost     INT      NOT NULL,
+    stone_cost    INT      NOT NULL
 );
 
-CREATE TABLE tech_tree_building
+CREATE TABLE unit
 (
-    id       INT PRIMARY KEY NOT NULL REFERENCES unit (id),
-    age               SMALLINT        NOT NULL,
-    enabling_research INT REFERENCES technology (id),
-    required_building INT REFERENCES unit (id),
-    required_tech     INT REFERENCES technology (id)
-);
-
-CREATE TABLE tech_tree_tech
-(
-    id        INT PRIMARY KEY REFERENCES technology (id),
-    age            SMALLINT NOT NULL,
-    required_tech  INT REFERENCES technology (id),
-    upper_building INT      NOT NULL REFERENCES unit (id)
-);
-
-
-CREATE TABLE tech_tree_unit
-(
-    id           INT PRIMARY KEY REFERENCES unit (id),
+    id                INT PRIMARY KEY,
     age               SMALLINT NOT NULL,
-    required_tech     INT REFERENCES technology (id),
-    upper_building    INT      NOT NULL REFERENCES unit (id),
-    parent_unit       INT REFERENCES unit (id),
-    enabling_research INT REFERENCES technology (id)
+    unit_type         INT      NOT NULL,
+    internal_name     VARCHAR  NOT NULL,
+    name              INT references help_text (id),
+    help_text_short   INT references help_text (id),
+    help_text         INT references help_text (id),
+    wood_cost         INT      NOT NULL,
+    food_cost         INT      NOT NULL,
+    gold_cost         INT      NOT NULL,
+    stone_cost        INT      NOT NULL,
+    attack            INT      NOT NULL,
+    melee_armor       INT      NOT NULL,
+    pierce_armor      INT      NOT NULL,
+    hit_points        INT      NOT NULL,
+    line_of_sight     INT      NOT NULL,
+    garrison_capacity INT      NOT NULL
 );
+
+CREATE TABLE tech_required_tech
+(
+    tech          INT PRIMARY KEY REFERENCES technology (id),
+    required_tech INT NOT NULL REFERENCES technology (id)
+);
+
+CREATE TABLE unit_required_tech
+(
+    unit          INT PRIMARY KEY REFERENCES unit (id),
+    required_tech INT NOT NULL REFERENCES technology (id)
+);
+
+CREATE TABLE unit_required_unit
+(
+    unit          INT PRIMARY KEY REFERENCES unit (id),
+    required_unit INT NOT NULL REFERENCES unit (id)
+);
+
+CREATE TABLE tech_required_unit
+(
+    tech INT PRIMARY KEY REFERENCES technology (id),
+    required_unit INT NOT NULL REFERENCES unit (id)
+);
+
+
 

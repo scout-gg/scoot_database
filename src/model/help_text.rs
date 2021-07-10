@@ -1,7 +1,7 @@
-use diesel::{PgConnection, RunQueryDsl, QueryDsl};
-use crate::schema::help_text;
-use eyre::Result;
 use crate::game_data::key_value::Ao2KeyValues;
+use crate::schema::help_text;
+use diesel::{PgConnection, QueryDsl, RunQueryDsl};
+use eyre::Result;
 
 #[derive(Queryable, Insertable, Associations, PartialEq, Debug)]
 #[table_name = "help_text"]
@@ -27,8 +27,12 @@ pub struct HelpText {
 }
 
 impl HelpText {
-    pub fn insert_from_values(conn: &PgConnection, values: &Ao2KeyValues, idx: i32) -> Result<Self> {
-        if let None = values.en.get(&idx) {
+    pub fn insert_from_values(
+        conn: &PgConnection,
+        values: &Ao2KeyValues,
+        idx: i32,
+    ) -> Result<Self> {
+        if values.en.get(&idx).is_none() {
             Err(eyre!("Could not insert help text {}, no value found", idx))
         } else {
             let text = HelpText {
@@ -66,7 +70,8 @@ impl HelpText {
                     text.id,
                     err
                 )
-            }).or_else(|_|HelpText::by_id(conn, text.id))
+            })
+            .or_else(|_| HelpText::by_id(conn, text.id))
     }
 
     pub fn by_id(conn: &PgConnection, id: i32) -> Result<HelpText> {

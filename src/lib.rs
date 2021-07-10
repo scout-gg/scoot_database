@@ -7,16 +7,26 @@ extern crate diesel_derives;
 extern crate eyre;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate lazy_static;
 
 use std::fs::File;
 
 use eyre::Result;
+use game_data::tech_tree::TechTreeDat;
 use genie::RecordedGame;
 
 pub mod db;
 pub mod game_data;
 pub mod model;
 mod schema;
+
+lazy_static! {
+    pub static ref TECHS: TechTreeDat = {
+        let techs = std::fs::read_to_string("resources/tech.json").unwrap();
+        serde_json::from_str(&techs).unwrap()
+    };
+}
 
 fn _load_game_file(path: &str) -> Result<RecordedGame<File>> {
     let file = File::open(path)?;
@@ -65,29 +75,29 @@ mod test {
         }
     }
 
-
-    use crate::game_data::tech_tree::{TechTreeDat, BuildingConnectionDat};
+    use crate::game_data::tech_tree::{BuildingConnectionDat, TechTreeDat};
 
     #[test]
     fn test() -> Result<()> {
         let result = std::fs::read_to_string("resources/tech.json")?;
         let data: TechTreeDat = serde_json::from_str(&result)?;
-        let tech_with_units: Vec<i32> = data.research_connections.iter()
+        let tech_with_units: Vec<i32> = data
+            .research_connections
+            .iter()
             .filter(|tech| !tech.units.is_empty())
             .map(|tech| tech.tech_id)
             .collect();
 
         println!("{:?}", tech_with_units);
 
-
-        let tech_with_techs: Vec<i32> = data.research_connections.iter()
+        let tech_with_techs: Vec<i32> = data
+            .research_connections
+            .iter()
             .filter(|tech| !tech.techs.is_empty())
             .map(|tech| tech.tech_id)
             .collect();
 
-
         println!("{:?}", tech_with_techs);
-
 
         Ok(())
     }

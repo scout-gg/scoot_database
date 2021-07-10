@@ -28,41 +28,25 @@ table! {
 }
 
 table! {
-    tech_tree_building (id) {
-        id -> Int4,
-        age -> Int2,
-        enabling_research -> Nullable<Int4>,
-        required_building -> Nullable<Int4>,
-        required_tech -> Nullable<Int4>,
+    tech_required_tech (tech) {
+        tech -> Int4,
+        required_tech -> Int4,
     }
 }
 
 table! {
-    tech_tree_tech (id) {
-        id -> Int4,
-        age -> Int2,
-        required_tech -> Nullable<Int4>,
-        upper_building -> Int4,
-    }
-}
-
-table! {
-    tech_tree_unit (id) {
-        id -> Int4,
-        age -> Int2,
-        required_tech -> Nullable<Int4>,
-        upper_building -> Int4,
-        parent_unit -> Nullable<Int4>,
-        enabling_research -> Nullable<Int4>,
+    tech_required_unit (tech) {
+        tech -> Int4,
+        required_unit -> Int4,
     }
 }
 
 table! {
     technology (id) {
         id -> Int4,
+        age -> Int2,
         internal_name -> Varchar,
         name -> Nullable<Int4>,
-        building_id -> Nullable<Int4>,
         research_time -> Int4,
         wood_cost -> Int4,
         food_cost -> Int4,
@@ -74,6 +58,7 @@ table! {
 table! {
     unit (id) {
         id -> Int4,
+        age -> Int2,
         unit_type -> Int4,
         internal_name -> Varchar,
         name -> Nullable<Int4>,
@@ -92,17 +77,34 @@ table! {
     }
 }
 
+table! {
+    unit_required_tech (unit) {
+        unit -> Int4,
+        required_tech -> Int4,
+    }
+}
+
+table! {
+    unit_required_unit (unit) {
+        unit -> Int4,
+        required_unit -> Int4,
+    }
+}
+
 joinable!(civilization -> help_text (name));
-joinable!(tech_tree_tech -> unit (upper_building));
+joinable!(tech_required_unit -> technology (tech));
+joinable!(tech_required_unit -> unit (required_unit));
 joinable!(technology -> help_text (name));
-joinable!(technology -> unit (building_id));
+joinable!(unit_required_tech -> technology (required_tech));
+joinable!(unit_required_tech -> unit (unit));
 
 allow_tables_to_appear_in_same_query!(
     civilization,
     help_text,
-    tech_tree_building,
-    tech_tree_tech,
-    tech_tree_unit,
+    tech_required_tech,
+    tech_required_unit,
     technology,
     unit,
+    unit_required_tech,
+    unit_required_unit,
 );

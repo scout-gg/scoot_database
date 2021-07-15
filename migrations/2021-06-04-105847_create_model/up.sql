@@ -35,7 +35,8 @@ CREATE TABLE technology
     wood_cost     INT      NOT NULL,
     food_cost     INT      NOT NULL,
     gold_cost     INT      NOT NULL,
-    stone_cost    INT      NOT NULL
+    stone_cost    INT      NOT NULL,
+    is_root BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE unit
@@ -56,7 +57,9 @@ CREATE TABLE unit
     pierce_armor      INT      NOT NULL,
     hit_points        INT      NOT NULL,
     line_of_sight     INT      NOT NULL,
-    garrison_capacity INT      NOT NULL
+    garrison_capacity INT      NOT NULL,
+    is_root BOOLEAN NOT NULL DEFAULT false,
+    belongs_to_civ INT REFERENCES civilization(id)
 );
 
 CREATE TABLE tech_required_tech

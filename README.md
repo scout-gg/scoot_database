@@ -26,7 +26,7 @@ diesel print-schema > src/schema.rs
    
 5. Run the extraction script : 
 ```shell
-cd script
+cd scripts
 ./extract_game_data.sh ../resources/aoe2dat
 ```
 

@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS civilization;
+DROP TABLE IF EXISTS civilization CASCADE;
 DROP TABLE IF EXISTS tech_required_tech CASCADE;
 DROP TABLE IF EXISTS unit_required_tech CASCADE;
 DROP TABLE IF EXISTS unit_required_unit CASCADE;

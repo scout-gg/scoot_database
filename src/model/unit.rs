@@ -1,10 +1,15 @@
+use diesel::{ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
+use eyre::Result;
+
 use crate::game_data::key_value::Ao2KeyValues;
 use crate::model::help_text::HelpText;
 use crate::schema::unit;
-use diesel::{PgConnection, QueryDsl, RunQueryDsl};
-use eyre::Result;
+use crate::schema::unit::columns::belongs_to_civ;
+use crate::schema::unit::columns::is_root;
 
-#[derive(Queryable, Insertable, Serialize, Deserialize, Debug, Clone)]
+#[derive(
+    Queryable, Insertable, AsChangeset, Identifiable, Serialize, Deserialize, Debug, Clone,
+)]
 #[table_name = "unit"]
 pub struct Unit {
     pub id: i32,
@@ -24,6 +29,8 @@ pub struct Unit {
     pub hit_points: i32,
     pub line_of_sight: i32,
     pub garrison_capacity: i32,
+    pub is_root: bool,
+    pub belongs_to_civ: Option<i32>,
 }
 
 impl Unit {
@@ -59,5 +66,21 @@ impl Unit {
             .find(id)
             .first(conn)
             .map_err(|err| eyre!("Unit with id {} not found : {}", id, err))
+    }
+
+    pub fn set_root(&self, conn: &PgConnection) -> Result<()> {
+        diesel::update(self)
+            .set(self::is_root.eq(true))
+            .execute(conn)
+            .expect("Unble to set root value on entity");
+        Ok(())
+    }
+
+    pub fn set_unique(&self, conn: &PgConnection, civ_id: i32) -> Result<()> {
+        diesel::update(self)
+            .set(self::belongs_to_civ.eq(Some(civ_id)))
+            .execute(conn)
+            .expect("Unble to set root value on entity");
+        Ok(())
     }
 }

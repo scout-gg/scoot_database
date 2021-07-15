@@ -3,6 +3,19 @@ pub struct Ao2CivsTechTree {
     pub civs: Vec<CivTechTreeData>,
 }
 
+impl Ao2CivsTechTree {
+    pub fn get_unique_units(&self) -> Vec<(i32, i32)> {
+        let mut unique_units = vec![];
+        self.civs.iter().enumerate().for_each(|(civ_id, civ)| {
+            civ.civ_techs_units
+                .iter()
+                .filter(|unit| unit.node_type == NodeType::UniqueUnit)
+                .for_each(|unit| unique_units.push((civ_id as i32, unit.node_id)))
+        });
+        unique_units
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct CivTechTreeData {
     pub civ_id: String,

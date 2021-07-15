@@ -8,6 +8,7 @@ use diesel_migrations::embed_migrations;
 use eyre::Result;
 use scout_gg_backend::db;
 use scout_gg_backend::game_data::aoe2dat::{Ao2TechData, Aoe2Dat, AoeFullDat};
+use scout_gg_backend::game_data::civ_tech_tree::Ao2CivsTechTree;
 use scout_gg_backend::model::civilization::insert_civilization;
 use scout_gg_backend::model::links::{
     TechRequiredTech, TechRequiredUnit, UnitRequiredTech, UnitRequiredUnit,
@@ -75,6 +76,21 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
         let _ = TechRequiredUnit::insert(conn, &tech_required_unit);
     }
 
+    TECHS.update_root_units(conn);
+    Tech::update_root_techs(&conn);
+
+    // tag unique unit with their civ id
+    let civ_tech_tree_data = std::fs::read_to_string("resources/civTechTrees.json")?;
+    let civ_tech_tree_data: Ao2CivsTechTree = serde_json::from_str(&civ_tech_tree_data)?;
+    civ_tech_tree_data
+        .get_unique_units()
+        .iter()
+        .for_each(|(civ, unit)| {
+            Unit::by_id(conn, *unit)
+                .expect("Unable to get unique unit")
+                .set_unique(conn, *civ)
+                .expect("Unable to update unique unit");
+        });
     Ok(())
 }
 

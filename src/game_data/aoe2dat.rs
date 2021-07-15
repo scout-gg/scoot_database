@@ -73,6 +73,7 @@ impl Ao2TechData {
             gold_cost: self.gold(),
             stone_cost: self.stone(),
             age: TECHS.get_tech_age(id),
+            is_root: false,
         }
     }
 
@@ -92,6 +93,7 @@ impl Ao2TechData {
             gold_cost: gold,
             stone_cost: stone,
             age: TECHS.get_tech_age(id),
+            is_root: false,
         }
     }
 
@@ -170,6 +172,8 @@ impl Aoe2DatUnit {
             name: Some(self.language_file_name),
             help_text_short: Some(short_help_idx),
             help_text: Some(help_idx),
+            is_root: false,
+            belongs_to_civ: None,
         }
     }
 }

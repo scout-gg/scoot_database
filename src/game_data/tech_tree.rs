@@ -1,4 +1,6 @@
 use crate::model::links::{TechRequiredTech, TechRequiredUnit, UnitRequiredTech, UnitRequiredUnit};
+use crate::model::unit::Unit;
+use diesel::PgConnection;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
@@ -103,6 +105,17 @@ impl TechTreeDat {
         let mut tech_unit_links = self.get_tech_required_unit();
         tech_unit_links.extend(self.get_tech_required_building());
         tech_unit_links
+    }
+
+    pub fn update_root_units(&self, conn: &PgConnection) {
+        self.unit_connections
+            .iter()
+            .filter(|unit| unit.required_research == -1)
+            .for_each(|unit| {
+                let unit = Unit::by_id(conn, unit.unit_id).unwrap();
+                unit.set_root(conn)
+                    .expect("Unble to set root value on entity");
+            });
     }
 
     fn get_tech_required_unit(&self) -> Vec<TechRequiredUnit> {

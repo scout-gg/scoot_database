@@ -64,7 +64,12 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
 
     for tech_tech_link in TECHS.get_tech_required_tech() {
         // Ignore duplicate violation and keep going
-        let _ = TechRequiredTech::insert(conn, &tech_tech_link);
+        if !(tech_tech_link.required_tech == 101
+            || tech_tech_link.required_tech == 102
+            || tech_tech_link.required_tech == 103
+            || tech_tech_link.required_tech == 104) {
+            let _ = TechRequiredTech::insert(conn, &tech_tech_link);
+        }
     }
 
     for unit_unit_link in TECHS.get_unit_unit_link() {
@@ -77,7 +82,7 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
     }
 
     TECHS.update_root_units(conn);
-    Tech::update_root_techs(&conn);
+    Tech::update_root_techs(&conn).expect("An error occured updating root techs");
 
     // tag unique unit with their civ id
     let civ_tech_tree_data = std::fs::read_to_string("resources/civTechTrees.json")?;

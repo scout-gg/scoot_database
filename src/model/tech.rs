@@ -76,18 +76,18 @@ impl Tech {
     pub fn update_root_techs(conn: &PgConnection) -> Result<()> {
         let res: Vec<(i32, Option<i32>)> = technology::table
             .left_outer_join(
-                tech_required_tech.on(crate::schema::tech_required_tech::columns::required_tech
+                tech_required_tech.on(crate::schema::tech_required_tech::columns::tech
                     .eq(crate::schema::technology::columns::id)),
             )
             .select((
                 crate::schema::technology::columns::id,
-                crate::schema::tech_required_tech::columns::required_tech.nullable(),
+                crate::schema::tech_required_tech::columns::tech.nullable(),
             ))
             .load(conn)?;
 
         let root_techs: Vec<&i32> = res
             .iter()
-            .filter(|(_, required)| required.is_none())
+            .filter(|(_, tech)| tech.is_none())
             .map(|(id, _)| id)
             .collect();
 

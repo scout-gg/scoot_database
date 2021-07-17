@@ -86,5 +86,19 @@ CREATE TABLE tech_required_unit
     required_unit INT NOT NULL REFERENCES unit (id)
 );
 
+CREATE TABLE civ_tech
+(
+    civ_id INT NOT NULL REFERENCES civilization (id),
+    tech_id INT NOT NULL REFERENCES technology (id),
+    PRIMARY KEY(civ_id, tech_id)
+);
+
+CREATE TABLE civ_unit
+(
+    civ_id INT NOT NULL REFERENCES civilization (id),
+    unit_id INT NOT NULL REFERENCES unit (id),
+    PRIMARY KEY(civ_id, unit_id)
+);
+
 
 

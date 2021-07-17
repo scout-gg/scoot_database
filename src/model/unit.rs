@@ -37,14 +37,14 @@ impl Unit {
     pub fn insert(conn: &PgConnection, values: &Ao2KeyValues, unit: &Unit) -> Result<Unit> {
         let mut unit = unit.clone();
 
-        unit.name = HelpText::insert_from_values(conn, &values, unit.name.unwrap())
+        unit.name = HelpText::insert_from_values(conn, values, unit.name.unwrap())
             .ok()
             .map(|h| h.id);
-        unit.help_text = HelpText::insert_from_values(conn, &values, unit.help_text.unwrap())
+        unit.help_text = HelpText::insert_from_values(conn, values, unit.help_text.unwrap())
             .ok()
             .map(|h| h.id);
         unit.help_text_short =
-            HelpText::insert_from_values(conn, &values, unit.help_text_short.unwrap())
+            HelpText::insert_from_values(conn, values, unit.help_text_short.unwrap())
                 .ok()
                 .map(|h| h.id);
 

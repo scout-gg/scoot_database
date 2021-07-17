@@ -1,4 +1,18 @@
 table! {
+    civ_tech (civ_id, tech_id) {
+        civ_id -> Int4,
+        tech_id -> Int4,
+    }
+}
+
+table! {
+    civ_unit (civ_id, unit_id) {
+        civ_id -> Int4,
+        unit_id -> Int4,
+    }
+}
+
+table! {
     civilization (id) {
         id -> Int4,
         name -> Int4,
@@ -94,6 +108,10 @@ table! {
     }
 }
 
+joinable!(civ_tech -> civilization (civ_id));
+joinable!(civ_tech -> technology (tech_id));
+joinable!(civ_unit -> civilization (civ_id));
+joinable!(civ_unit -> unit (unit_id));
 joinable!(civilization -> help_text (name));
 joinable!(tech_required_unit -> technology (tech));
 joinable!(tech_required_unit -> unit (required_unit));
@@ -103,6 +121,8 @@ joinable!(unit_required_tech -> technology (required_tech));
 joinable!(unit_required_tech -> unit (unit));
 
 allow_tables_to_appear_in_same_query!(
+    civ_tech,
+    civ_unit,
     civilization,
     help_text,
     tech_required_tech,

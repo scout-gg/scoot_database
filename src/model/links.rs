@@ -1,6 +1,8 @@
 use diesel::{PgConnection, RunQueryDsl};
 use eyre::Result;
 
+use crate::schema::civ_tech;
+use crate::schema::civ_unit;
 use crate::schema::tech_required_tech;
 use crate::schema::tech_required_unit;
 use crate::schema::unit_required_tech;
@@ -32,6 +34,20 @@ pub struct UnitRequiredUnit {
 pub struct TechRequiredUnit {
     pub tech: i32,
     pub required_unit: i32,
+}
+
+#[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[table_name = "civ_tech"]
+pub struct CivTech {
+    pub civ_id: i32,
+    pub tech_id: i32,
+}
+
+#[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[table_name = "civ_unit"]
+pub struct CivUnit {
+    pub civ_id: i32,
+    pub unit_id: i32,
 }
 
 impl TechRequiredTech {
@@ -91,5 +107,23 @@ impl TechRequiredUnit {
                     err
                 )
             })
+    }
+}
+
+impl CivTech {
+    pub fn insert(self, conn: &PgConnection) -> Result<Self> {
+        diesel::insert_into(civ_tech::table)
+            .values(self.clone())
+            .get_result(conn)
+            .map_err(|err| eyre!("Error inserting civ_tech {:?} : {}", &self, err))
+    }
+}
+
+impl CivUnit {
+    pub fn insert(self, conn: &PgConnection) -> Result<Self> {
+        diesel::insert_into(civ_unit::table)
+            .values(self.clone())
+            .get_result(conn)
+            .map_err(|err| eyre!("Error inserting civ_tech {:?} : {}", &self, err))
     }
 }

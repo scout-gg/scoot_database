@@ -16,7 +16,7 @@ pub fn insert_civilization(
     values: &Ao2KeyValues,
     civilization: &Civilization,
 ) -> Result<Civilization> {
-    HelpText::insert_from_values(conn, &values, civilization.name)?;
+    HelpText::insert_from_values(conn, values, civilization.name)?;
 
     diesel::insert_into(civilization::table)
         .values(civilization)

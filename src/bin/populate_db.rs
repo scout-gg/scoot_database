@@ -51,7 +51,7 @@ fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: &Aoe2Dat) {
                 "Unit or building converter to entity : {} - {:?}, {}",
                 unit.id, unit.name, unit.unit_type
             );
-            if let Err(err) = Unit::insert(&conn, &values, &unit) {
+            if let Err(err) = Unit::insert(conn, values, &unit) {
                 eprintln!("{}", err);
             }
         });
@@ -67,7 +67,8 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
         if !(tech_tech_link.required_tech == 101
             || tech_tech_link.required_tech == 102
             || tech_tech_link.required_tech == 103
-            || tech_tech_link.required_tech == 104) {
+            || tech_tech_link.required_tech == 104)
+        {
             let _ = TechRequiredTech::insert(conn, &tech_tech_link);
         }
     }
@@ -82,7 +83,7 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
     }
 
     TECHS.update_root_units(conn);
-    Tech::update_root_techs(&conn).expect("An error occured updating root techs");
+    Tech::update_root_techs(conn).expect("An error occured updating root techs");
 
     // tag unique unit with their civ id
     let civ_tech_tree_data = std::fs::read_to_string("resources/civTechTrees.json")?;
@@ -96,13 +97,18 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
                 .set_unique(conn, *civ)
                 .expect("Unable to update unique unit");
         });
+
+    civ_tech_tree_data
+        .get_civ_enabled_entities()
+        .iter()
+        .for_each(|civ_enabled_units| civ_enabled_units.to_db(&conn).unwrap());
     Ok(())
 }
 
 fn tech_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: Vec<Ao2TechData>) {
     data.iter().enumerate().for_each(|(idx, tech)| {
         let db_tech = tech.to_tech(idx as i32);
-        if let Err(err) = Tech::insert_with_text(conn, &values, &db_tech) {
+        if let Err(err) = Tech::insert_with_text(conn, values, &db_tech) {
             eprintln!("Found tech with no text helper, inserting \"enable tech\" instead :  tech.id {}, tech.name_helper {:?}, err {}", db_tech.id, db_tech.name, err);
             let no_text_tech = tech.to_enable_tech(idx as i32);
             Tech::insert(conn, &no_text_tech).unwrap();

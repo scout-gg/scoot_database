@@ -21,15 +21,15 @@ use crate::schema::technology::columns::is_root;
 )]
 #[table_name = "technology"]
 pub struct Tech {
-    pub id: i32,
+    pub id: i16,
     pub age: i16,
     pub internal_name: String,
     pub name: Option<i32>,
-    pub research_time: i32,
-    pub wood_cost: i32,
-    pub food_cost: i32,
-    pub gold_cost: i32,
-    pub stone_cost: i32,
+    pub research_time: i16,
+    pub wood_cost: i16,
+    pub food_cost: i16,
+    pub gold_cost: i16,
+    pub stone_cost: i16,
     pub is_root: bool,
 }
 
@@ -58,7 +58,7 @@ impl Tech {
             })
     }
 
-    pub fn by_id(conn: &PgConnection, id: i32) -> Result<Tech> {
+    pub fn by_id(conn: &PgConnection, id: i16) -> Result<Tech> {
         technology::table
             .find(id)
             .first(conn)
@@ -74,7 +74,7 @@ impl Tech {
     }
 
     pub fn update_root_techs(conn: &PgConnection) -> Result<()> {
-        let res: Vec<(i32, Option<i32>)> = technology::table
+        let res: Vec<(i16, Option<i16>)> = technology::table
             .left_outer_join(
                 tech_required_tech.on(crate::schema::tech_required_tech::columns::tech
                     .eq(crate::schema::technology::columns::id)),
@@ -85,7 +85,7 @@ impl Tech {
             ))
             .load(conn)?;
 
-        let root_techs: Vec<&i32> = res
+        let root_techs: Vec<&i16> = res
             .iter()
             .filter(|(_, tech)| tech.is_none())
             .map(|(id, _)| id)

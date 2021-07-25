@@ -8,7 +8,9 @@ use eyre::Result;
 
 pub struct HelpText {
     pub id: i32,
+    // Either some language file english value or the entity internal name
     pub content_en: String,
+    // other language values
     pub content_fr: Option<String>,
     pub content_br: Option<String>,
     pub content_de: Option<String>,

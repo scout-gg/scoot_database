@@ -7,7 +7,7 @@ use eyre::Result;
 #[derive(Queryable, Insertable)]
 #[table_name = "civilization"]
 pub struct Civilization {
-    pub id: i32,
+    pub id: i16,
     pub name: i32,
 }
 

@@ -11,43 +11,43 @@ use crate::schema::unit_required_unit;
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "tech_required_tech"]
 pub struct TechRequiredTech {
-    pub tech: i32,
-    pub required_tech: i32,
+    pub tech: i16,
+    pub required_tech: i16,
 }
 
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "unit_required_tech"]
 pub struct UnitRequiredTech {
-    pub unit: i32,
-    pub required_tech: i32,
+    pub unit: i16,
+    pub required_tech: i16,
 }
 
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "unit_required_unit"]
 pub struct UnitRequiredUnit {
-    pub unit: i32,
-    pub required_unit: i32,
+    pub unit: i16,
+    pub required_unit: i16,
 }
 
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "tech_required_unit"]
 pub struct TechRequiredUnit {
-    pub tech: i32,
-    pub required_unit: i32,
+    pub tech: i16,
+    pub required_unit: i16,
 }
 
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "civ_tech"]
 pub struct CivTech {
-    pub civ_id: i32,
-    pub tech_id: i32,
+    pub civ_id: i16,
+    pub tech_id: i16,
 }
 
 #[derive(Queryable, Insertable, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[table_name = "civ_unit"]
 pub struct CivUnit {
-    pub civ_id: i32,
-    pub unit_id: i32,
+    pub civ_id: i16,
+    pub unit_id: i16,
 }
 
 impl TechRequiredTech {
@@ -72,7 +72,7 @@ impl UnitRequiredTech {
             .get_result(conn)
             .map_err(|err| {
                 eyre!(
-                    "Error inserting tech_required_tech {:?} : {}",
+                    "Error inserting unit_required_tech {:?} : {}",
                     unit_required_tech,
                     err
                 )
@@ -87,7 +87,7 @@ impl UnitRequiredUnit {
             .get_result(conn)
             .map_err(|err| {
                 eyre!(
-                    "Error inserting tech_required_tech {:?} : {}",
+                    "Error inserting unit_required_unit {:?} : {}",
                     unit_required_unit,
                     err
                 )
@@ -102,7 +102,7 @@ impl TechRequiredUnit {
             .get_result(conn)
             .map_err(|err| {
                 eyre!(
-                    "Error inserting tech_required_tech {:?} : {}",
+                    "Error inserting tech_required_unit {:?} : {}",
                     tech_required_unit,
                     err
                 )

@@ -8,13 +8,13 @@ pub struct Ao2CivsTechTree {
 }
 
 impl Ao2CivsTechTree {
-    pub fn get_unique_units(&self) -> Vec<(i32, i32)> {
+    pub fn get_unique_units(&self) -> Vec<(i16, i16)> {
         let mut unique_units = vec![];
         self.civs.iter().enumerate().for_each(|(civ_id, civ)| {
             civ.civ_techs_units
                 .iter()
                 .filter(|unit| unit.node_type == NodeType::UniqueUnit)
-                .for_each(|unit| unique_units.push((civ_id as i32, unit.node_id)))
+                .for_each(|unit| unique_units.push((civ_id as i16, unit.node_id)))
         });
         unique_units
     }
@@ -39,7 +39,7 @@ impl Ao2CivsTechTree {
                     .for_each(|enabled| enabled_entities.push(enabled));
 
                 // Civ start at index 0 in civTechtree.json, Brits id is 1 in db
-                let civ_id = (civ_id + 1) as i32;
+                let civ_id = (civ_id + 1) as i16;
                 CivEnabledTech {
                     civ_id,
                     entity: enabled_entities,
@@ -68,15 +68,15 @@ pub struct CivTechTreeBuildingData {
     #[serde(rename = "Name")]
     pub name: String,
     #[serde(rename = "Building ID")]
-    pub building_id: i32,
+    pub building_id: i16,
     #[serde(rename = "Picture Index")]
-    pub picture_index: i32,
+    pub picture_index: i16,
     #[serde(rename = "Node Status")]
     pub node_status: NodeStatus,
     #[serde(rename = "Trigger Tech ID")]
-    pub trigger_tech_id: i32,
+    pub trigger_tech_id: i16,
     #[serde(rename = "Link ID")]
-    pub link_id: i32,
+    pub link_id: i16,
     #[serde(rename = "Link Node Type")]
     pub link_type: LinkType,
     #[serde(rename = "Use Type")]
@@ -90,21 +90,21 @@ pub struct CivTechTreeUnitData {
     #[serde(rename = "Name")]
     pub name: String,
     #[serde(rename = "Building ID")]
-    pub building_id: i32,
+    pub building_id: i16,
     #[serde(rename = "Picture Index")]
-    pub picture_index: i32,
+    pub picture_index: i16,
     #[serde(rename = "Node ID")]
-    pub node_id: i32,
+    pub node_id: i16,
     #[serde(rename = "Node Status")]
     pub node_status: NodeStatus,
     #[serde(rename = "Node Type")]
     pub node_type: NodeType,
     #[serde(rename = "Link ID")]
-    pub link_id: i32,
+    pub link_id: i16,
     #[serde(rename = "Link Node Type")]
     pub link_type: LinkType,
     #[serde(rename = "Trigger Tech ID")]
-    pub trigger_tech_id: i32,
+    pub trigger_tech_id: i16,
     #[serde(rename = "Use Type")]
     pub use_type: UseType,
 }
@@ -145,14 +145,14 @@ pub enum UseType {
 }
 
 pub struct CivEnabledTech {
-    pub civ_id: i32,
+    pub civ_id: i16,
     pub entity: Vec<ExtractHelper>,
 }
 
 pub enum ExtractHelper {
-    UnitAndUpgrade(i32, i32),
-    UnitOrBuilding(i32),
-    Tech(i32),
+    UnitAndUpgrade(i16, i16),
+    UnitOrBuilding(i16),
+    Tech(i16),
 }
 
 impl From<&CivTechTreeUnitData> for ExtractHelper {

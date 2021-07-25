@@ -12,25 +12,25 @@ use crate::schema::unit::columns::is_root;
 )]
 #[table_name = "unit"]
 pub struct Unit {
-    pub id: i32,
+    pub id: i16,
     pub age: i16,
     pub unit_type: i32,
     pub internal_name: String,
     pub name: Option<i32>,
     pub help_text_short: Option<i32>,
     pub help_text: Option<i32>,
-    pub wood_cost: i32,
-    pub food_cost: i32,
-    pub gold_cost: i32,
-    pub stone_cost: i32,
-    pub attack: i32,
-    pub melee_armor: i32,
-    pub pierce_armor: i32,
-    pub hit_points: i32,
-    pub line_of_sight: i32,
-    pub garrison_capacity: i32,
+    pub wood_cost: i16,
+    pub food_cost: i16,
+    pub gold_cost: i16,
+    pub stone_cost: i16,
+    pub attack: i16,
+    pub melee_armor: i16,
+    pub pierce_armor: i16,
+    pub hit_points: i16,
+    pub line_of_sight: i16,
+    pub garrison_capacity: i16,
     pub is_root: bool,
-    pub belongs_to_civ: Option<i32>,
+    pub belongs_to_civ: Option<i16>,
 }
 
 impl Unit {
@@ -61,7 +61,7 @@ impl Unit {
             })
     }
 
-    pub fn by_id(conn: &PgConnection, id: i32) -> Result<Unit> {
+    pub fn by_id(conn: &PgConnection, id: i16) -> Result<Unit> {
         unit::table
             .find(id)
             .first(conn)
@@ -76,7 +76,7 @@ impl Unit {
         Ok(())
     }
 
-    pub fn set_unique(&self, conn: &PgConnection, civ_id: i32) -> Result<()> {
+    pub fn set_unique(&self, conn: &PgConnection, civ_id: i16) -> Result<()> {
         diesel::update(self)
             .set(self::belongs_to_civ.eq(Some(civ_id)))
             .execute(conn)

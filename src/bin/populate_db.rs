@@ -7,7 +7,8 @@ use diesel::PgConnection;
 use diesel_migrations::embed_migrations;
 use eyre::Result;
 use scout_gg_backend::db;
-use scout_gg_backend::game_data::aoe2dat::{Ao2TechData, Aoe2Dat, AoeFullDat};
+use scout_gg_backend::game_data::aoe2dat::DAT;
+use scout_gg_backend::game_data::aoe2dat::{DatCiv, DatTech};
 use scout_gg_backend::game_data::civ_tech_tree::Ao2CivsTechTree;
 use scout_gg_backend::model::civilization::insert_civilization;
 use scout_gg_backend::model::links::{
@@ -15,7 +16,6 @@ use scout_gg_backend::model::links::{
 };
 use scout_gg_backend::model::tech::Tech;
 use scout_gg_backend::model::unit::Unit;
-use scout_gg_backend::TECHS;
 
 embed_migrations!();
 
@@ -25,26 +25,27 @@ fn main() -> Result<()> {
     embedded_migrations::run(&conn).unwrap();
     let values = Ao2KeyValues::create();
 
-    let full_data = std::fs::read_to_string("resources/full.json")?;
-    let full_data: AoeFullDat = serde_json::from_str(&full_data)?;
-
-    full_data.civs.iter().enumerate().for_each(|(id, civ)| {
-        let civ = civ.to_civ(id as i32);
-        insert_civilization(&conn, &values, &civ).unwrap();
-    });
+    DAT.0
+        .civilization_table
+        .civilizations
+        .iter()
+        .enumerate()
+        .for_each(|(id, civ)| {
+            let civ = DatCiv(&civ).to_civ(id as i16);
+            insert_civilization(&conn, &values, &civ).unwrap();
+        });
 
     // Default help text
-    let unit_file = std::fs::read_to_string("resources/units_buildings_techs.json")?;
-    let data: Aoe2Dat = serde_json::from_str(&unit_file)?;
-    units_to_db(&conn, &values, &data);
-    tech_to_db(&conn, &values, full_data.techs);
+    units_to_db(&conn, &values);
+    tech_to_db(&conn, &values);
     links_to_db(&conn)?;
     Ok(())
 }
 
-fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: &Aoe2Dat) {
-    data.units_buildings
-        .values()
+fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues) {
+    DAT.get_unit_buildings()
+        .iter()
+        .filter(|unit| unit.0.creatable.is_some())
         .map(|unit| unit.to_unit())
         .for_each(|unit| {
             println!(
@@ -58,11 +59,17 @@ fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: &Aoe2Dat) {
 }
 
 fn links_to_db(conn: &PgConnection) -> Result<()> {
-    for unit_tech_link in TECHS.get_unit_techs_link() {
-        UnitRequiredTech::insert(conn, &unit_tech_link)?;
+    for unit_tech_link in DAT.get_unit_techs_link() {
+        if !(unit_tech_link.required_tech == 101
+            || unit_tech_link.required_tech == 102
+            || unit_tech_link.required_tech == 103
+            || unit_tech_link.required_tech == 104)
+        {
+            let _ = UnitRequiredTech::insert(conn, &unit_tech_link);
+        }
     }
 
-    for tech_tech_link in TECHS.get_tech_required_tech() {
+    for tech_tech_link in DAT.get_tech_required_tech() {
         // Ignore duplicate violation and keep going
         if !(tech_tech_link.required_tech == 101
             || tech_tech_link.required_tech == 102
@@ -73,16 +80,16 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
         }
     }
 
-    for unit_unit_link in TECHS.get_unit_unit_link() {
+    for unit_unit_link in DAT.get_unit_unit_link() {
         // Ignore duplicate violation and keep going
         let _ = UnitRequiredUnit::insert(conn, &unit_unit_link);
     }
 
-    for tech_required_unit in TECHS.get_tech_unit_links() {
+    for tech_required_unit in DAT.get_tech_unit_links() {
         let _ = TechRequiredUnit::insert(conn, &tech_required_unit);
     }
 
-    TECHS.update_root_units(conn);
+    DAT.update_root_units(conn);
     Tech::update_root_techs(conn).expect("An error occured updating root techs");
 
     // tag unique unit with their civ id
@@ -105,12 +112,13 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
     Ok(())
 }
 
-fn tech_to_db(conn: &PgConnection, values: &Ao2KeyValues, data: Vec<Ao2TechData>) {
-    data.iter().enumerate().for_each(|(idx, tech)| {
-        let db_tech = tech.to_tech(idx as i32);
-        if let Err(err) = Tech::insert_with_text(conn, values, &db_tech) {
-            eprintln!("Found tech with no text helper, inserting \"enable tech\" instead :  tech.id {}, tech.name_helper {:?}, err {}", db_tech.id, db_tech.name, err);
-            let no_text_tech = tech.to_enable_tech(idx as i32);
+fn tech_to_db(conn: &PgConnection, values: &Ao2KeyValues) {
+    DAT.0.tech_table.techs.iter().enumerate().for_each(|(idx, tech)| {
+        let dat_tech = DatTech(tech);
+        let tech = dat_tech.to_tech(idx as i16);
+        if let Err(err) = Tech::insert_with_text(conn, values, &tech) {
+            eprintln!("Found tech with no text helper, inserting \"enable tech\" instead :  tech.id {}, tech.name_helper {:?}, err {}", idx, dat_tech.0.name.content, err);
+            let no_text_tech = dat_tech.to_enable_tech(idx as i16);
             Tech::insert(conn, &no_text_tech).unwrap();
         }
     });

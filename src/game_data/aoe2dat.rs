@@ -1,203 +1,172 @@
-use crate::game_data::tech_tree::TechTreeDat;
 use crate::game_data::{help_text_offset, short_help_text_offset};
 use crate::model::civilization::Civilization;
 use crate::model::tech::Tech;
 use crate::model::unit::Unit;
-use crate::TECHS;
+use aoe_djin::dat;
+use aoe_djin::dat::civilization::{Combatant, UnitType};
+use aoe_djin::dat::tech::ResourceCostType;
+use aoe_djin::dat::{DatFile, ResourceUsageType};
+use itertools::Itertools;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::HashSet;
 
-pub const MILITARY_UNITS: i32 = 70;
-pub const BUILDING: i32 = 80;
-pub const FOOD: i32 = 0;
-pub const WOOD: i32 = 1;
-pub const STONE: i32 = 2;
-pub const GOLD: i32 = 3;
+pub struct DatFileWrapper(pub DatFile);
 
-// From unit_buildings.json extracted via aoe2dat
-#[derive(Deserialize, Debug)]
-pub struct Aoe2Dat {
-    pub units_buildings: HashMap<String, Aoe2DatUnit>,
+pub struct DatTech<'a>(pub &'a dat::tech::Tech);
+
+pub struct DatUnit<'a>(pub &'a dat::civilization::Unit);
+
+pub struct DatUnitType<'a>(pub &'a dat::civilization::UnitType);
+
+pub struct DatCiv<'a>(pub &'a dat::civilization::Civilization);
+
+lazy_static! {
+    pub static ref DAT: DatFileWrapper = {
+        let dat = DatFile::from_file("resources/empires2_x2_p1.dat").unwrap();
+        DatFileWrapper(dat)
+    };
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
-pub struct AoeFullDat {
-    pub graphics: Value,
-    pub effects: Value,
-    pub tech_tree: TechTreeDat,
-    pub civs: Vec<Aoe2Civ>,
-    pub techs: Vec<Ao2TechData>,
-    pub player_colours: Value,
-    pub file_version: Value,
+impl DatFileWrapper {
+    pub fn get_unit_buildings(&self) -> Vec<DatUnit> {
+        let mut units = vec![];
+        let mut ids = HashSet::new();
+        self.0.civilization_table.civilizations[1..] // skip gaia
+            .iter()
+            .flat_map(|civ| civ.units.iter())
+            .for_each(|unit| {
+                if ids.insert(unit.id) {
+                    units.push(DatUnit(unit))
+                }
+            });
+
+        units
+    }
 }
 
-// Raw Tech data from full.json
-#[derive(Deserialize, Debug)]
-pub struct Ao2TechData {
-    #[serde(rename = "Name")]
-    pub name: String,
-    #[serde(rename = "LanguageDLLName")]
-    pub language_dll_name: i32,
-    #[serde(rename = "LanguageDLLHelp")]
-    pub language_dll_help: i32,
-    #[serde(rename = "IconID")]
-    pub icon_id: i32,
-    #[serde(rename = "ResearchLocation")]
-    pub building: i32,
-    #[serde(rename = "ResearchTime")]
-    pub research_time: i32,
-    #[serde(rename = "ResourceCosts")]
-    pub cost: Vec<DatResourceCost>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct DatResourceCost {
-    #[serde(rename = "Amount")]
-    pub amount: i32,
-    #[serde(rename = "Flag")]
-    pub flag: i32,
-    #[serde(rename = "Type")]
-    pub resource_type: i32,
-}
-
-impl Ao2TechData {
-    pub fn to_enable_tech(&self, id: i32) -> Tech {
+impl DatTech<'_> {
+    pub fn to_enable_tech(&self, id: i16) -> Tech {
         Tech {
             id,
             name: None,
-            internal_name: self.name.clone(),
-            research_time: self.research_time,
-            wood_cost: self.wood(),
-            food_cost: self.food(),
-            gold_cost: self.gold(),
-            stone_cost: self.stone(),
-            age: TECHS.get_tech_age(id),
+            internal_name: self.0.name.content.clone(),
+            research_time: self.0.research_time,
+            wood_cost: self.cost(ResourceCostType::Food),
+            food_cost: self.cost(ResourceCostType::Wood),
+            gold_cost: self.cost(ResourceCostType::Gold),
+            stone_cost: self.cost(ResourceCostType::Stone),
+            age: DAT.get_tech_age(id),
             is_root: false,
         }
     }
 
-    pub fn to_tech(&self, id: i32) -> Tech {
-        let food = self.food();
-        let wood = self.wood();
-        let gold = self.gold();
-        let stone = self.stone();
-
+    pub fn to_tech(&self, id: i16) -> Tech {
         Tech {
             id,
-            name: Some(self.language_dll_name),
-            internal_name: self.name.clone(),
-            research_time: self.research_time,
-            wood_cost: wood,
-            food_cost: food,
-            gold_cost: gold,
-            stone_cost: stone,
-            age: TECHS.get_tech_age(id),
+            name: Some(self.0.language_dll_name as i32),
+            internal_name: self.0.name.content.clone(),
+            research_time: self.0.research_time,
+            wood_cost: self.cost(ResourceCostType::Food),
+            food_cost: self.cost(ResourceCostType::Wood),
+            gold_cost: self.cost(ResourceCostType::Gold),
+            stone_cost: self.cost(ResourceCostType::Stone),
+            age: DAT.get_tech_age(id),
             is_root: false,
         }
     }
 
-    fn food(&self) -> i32 {
-        self.cost
+    fn cost(&self, cost_type: ResourceCostType) -> i16 {
+        self.0
+            .research_resource_cost
             .iter()
-            .find(|cost| cost.resource_type == FOOD)
-            .map(|cost| cost.amount)
-            .unwrap_or(0)
-    }
-
-    fn wood(&self) -> i32 {
-        self.cost
-            .iter()
-            .find(|cost| cost.resource_type == WOOD)
-            .map(|cost| cost.amount)
-            .unwrap_or(0)
-    }
-
-    fn gold(&self) -> i32 {
-        self.cost
-            .iter()
-            .find(|cost| cost.resource_type == GOLD)
-            .map(|cost| cost.amount)
-            .unwrap_or(0)
-    }
-
-    fn stone(&self) -> i32 {
-        self.cost
-            .iter()
-            .find(|cost| cost.resource_type == STONE)
+            .find(|cost| cost.resource_type == cost_type)
             .map(|cost| cost.amount)
             .unwrap_or(0)
     }
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Aoe2DatUnit {
-    pub cost: Cost,
-    pub attack: i32,
-    pub melee_armor: i32,
-    pub pierce_armor: i32,
-    pub base_id: i32,
-    pub help_converter: i32,
-    pub language_file_name: i32,
-    pub language_file_help: i32,
-    pub name: String,
-    pub hit_points: i32,
-    pub line_of_sight: i32,
-    pub garrison_capacity: i32,
-    #[serde(rename = "type")]
-    pub unit_type: i32,
-    pub class: i32,
-}
-
-impl Aoe2DatUnit {
+impl DatUnit<'_> {
     pub fn to_unit(&self) -> Unit {
-        let short_help_idx = short_help_text_offset(self.language_file_help);
-        let help_idx = help_text_offset(self.language_file_help);
+        // FIXME Maybe
+        // let short_help_idx = short_help_text_offset(self.0.language_file_help);
+        // let help_idx = help_text_offset(self.0.language_file_help);
 
         Unit {
-            id: self.base_id,
-            age: TECHS.get_unit_age(self.base_id),
-            unit_type: self.unit_type,
-            internal_name: self.name.clone(),
-            wood_cost: self.cost.wood,
-            food_cost: self.cost.food,
-            gold_cost: self.cost.gold,
-            stone_cost: self.cost.stone,
-            attack: self.attack,
-            melee_armor: self.melee_armor,
-            pierce_armor: self.pierce_armor,
-            hit_points: self.hit_points,
-            line_of_sight: self.line_of_sight,
-            garrison_capacity: self.garrison_capacity,
-            name: Some(self.language_file_name),
-            help_text_short: Some(short_help_idx),
-            help_text: Some(help_idx),
+            id: self.0.base_id,
+            age: DAT.get_unit_age(self.0.base_id),
+            unit_type: DatUnitType(&self.0.unit_type).into(),
+            internal_name: self.0.name.content.clone(),
+            wood_cost: self.cost(ResourceUsageType::Wood),
+            food_cost: self.cost(ResourceUsageType::Food),
+            gold_cost: self.cost(ResourceUsageType::Gold),
+            stone_cost: self.cost(ResourceUsageType::Stone),
+            attack: self.combatant().displayed_attack,
+            melee_armor: self.combatant().displayed_melee_armour,
+            pierce_armor: self.combatant().base_armor,
+            hit_points: self.0.hit_points,
+            line_of_sight: self.0.line_of_sight as i16,
+            garrison_capacity: self.0.garrison_capacity as i16,
+            name: Some(self.0.language_dll_name),
+            help_text_short: Some(self.0.language_dll_help),
+            help_text: Some(self.0.language_dll_hot_key_text),
             is_root: false,
             belongs_to_civ: None,
         }
     }
+
+    fn cost(&self, cost_type: ResourceUsageType) -> i16 {
+        self.0
+            .creatable
+            .as_ref()
+            .expect("Unit should be creatable")
+            .resources_costs
+            .iter()
+            .find(|cost| cost.attribute == cost_type)
+            .map(|cost| cost.amount)
+            .unwrap_or(0)
+    }
+
+    fn combatant(&self) -> &Combatant {
+        self.0.type_50.as_ref().expect("Unit should be combatant")
+    }
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Cost {
-    pub wood: i32,
-    pub food: i32,
-    pub gold: i32,
-    pub stone: i32,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Aoe2Civ {
-    #[serde(rename = "Name")]
-    pub name: String,
-}
-
-impl Aoe2Civ {
-    pub fn to_civ(&self, id: i32) -> Civilization {
+impl DatCiv<'_> {
+    pub fn to_civ(&self, id: i16) -> Civilization {
         let name_location = 10270 + id;
         Civilization {
             id,
-            name: name_location,
+            name: name_location as i32,
         }
+    }
+}
+
+impl From<DatUnitType<'_>> for i32 {
+    fn from(dat: DatUnitType<'_>) -> Self {
+        match dat.0 {
+            UnitType::EyeCandy => 10,
+            UnitType::Trees => 15,
+            UnitType::Flag => 20,
+            UnitType::Dopl => 25,
+            UnitType::DeadFish => 30,
+            UnitType::Bird => 40,
+            UnitType::Combatant => 50,
+            UnitType::Projectile => 60,
+            UnitType::Creatable => 70,
+            UnitType::Building => 80,
+            UnitType::AoeTrees => 90,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::DAT;
+    use eyre::Result;
+
+    #[test]
+    fn should_get_unit_buildings() -> Result<()> {
+        assert_eq!(DAT.get_unit_buildings().len(), 1700);
+        Ok(())
     }
 }

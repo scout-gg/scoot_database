@@ -129,15 +129,15 @@ fn copy_game_files() -> Result<()> {
     let home = std::env!("HOME");
     let resources_path = format!("{}/.steam/steam/steamapps/common/AoE2DE/resources/", home);
     let crate_resources = "resources/keyvalues";
-    let key_value_locale = "/strings/key-value/key-value-strings-utf8.txt";
+    let key_value_locale = "strings/key-value/key-value-strings-utf8.txt";
 
     for entry in std::fs::read_dir(resources_path)? {
         let entry = entry?;
         match entry.file_name().to_str().unwrap() {
             "br" => std::fs::copy(
-                format!("{}/{}", entry.path().to_str().unwrap(), key_value_locale),
-                format!("{}/br", crate_resources),
-            )?,
+                    format!("{}/{}", entry.path().to_str().unwrap(), key_value_locale),
+                    format!("{}/br", crate_resources),
+                )?,
             "de" => std::fs::copy(
                 format!("{}/{}", entry.path().to_str().unwrap(), key_value_locale),
                 format!("{}/de", crate_resources),

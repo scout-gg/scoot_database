@@ -87,9 +87,8 @@ impl DatTech<'_> {
 
 impl DatUnit<'_> {
     pub fn to_unit(&self) -> Unit {
-        // FIXME Maybe
-        // let short_help_idx = short_help_text_offset(self.0.language_file_help);
-        // let help_idx = help_text_offset(self.0.language_file_help);
+        let short_help_idx = short_help_text_offset(self.0.language_dll_help);
+        let help_idx = help_text_offset(self.0.language_dll_help);
 
         Unit {
             id: self.0.base_id,
@@ -107,8 +106,8 @@ impl DatUnit<'_> {
             line_of_sight: self.0.line_of_sight as i16,
             garrison_capacity: self.0.garrison_capacity as i16,
             name: Some(self.0.language_dll_name),
-            help_text_short: Some(self.0.language_dll_help),
-            help_text: Some(self.0.language_dll_hot_key_text),
+            help_text_short: Some(short_help_idx),
+            help_text: Some(help_idx),
             is_root: false,
             belongs_to_civ: None,
         }

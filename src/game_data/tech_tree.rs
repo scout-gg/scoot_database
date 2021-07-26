@@ -11,10 +11,7 @@ impl DatFileWrapper {
             .iter()
             .find(|age| age.techs.contains(&(tech_id as i32)))
             .map(|age| age.id as i16)
-            .unwrap_or_else(|| {
-                eprintln!("Age not found for tech {}", tech_id);
-                0
-            })
+            .unwrap_or(0)
     }
 
     pub fn get_unit_age(&self, unit_id: i16) -> i16 {
@@ -24,10 +21,7 @@ impl DatFileWrapper {
             .iter()
             .find(|age| age.units.contains(&(unit_id as i32)))
             .map(|age| age.id as i16)
-            .unwrap_or_else(|| {
-                eprintln!("Age not found for unit {}", unit_id);
-                0
-            })
+            .unwrap_or(0)
     }
 
     pub fn get_tech_required_tech(&self) -> Vec<TechRequiredTech> {
@@ -68,10 +62,25 @@ impl DatFileWrapper {
             .unit_connections
             .iter()
             .filter(|unit| unit.required_research == -1)
+            .filter_map(|unit| Unit::by_id(conn, unit.id as i16).ok())
             .for_each(|unit| {
-                let unit = Unit::by_id(conn, unit.id as i16).unwrap();
-                unit.set_root(conn)
-                    .expect("Unble to set root value on entity");
+                unit.update_root(conn)
+                    .expect("Unble to set root value on entity")
+            });
+    }
+
+    pub fn update_root_buildings(&self, conn: &PgConnection) {
+        self.0
+            .tech_tree
+            .building_connections
+            .iter()
+            .filter(|unit| UnitRequiredTech::by_id(conn, unit.id as i16).is_err())
+            .filter(|unit| UnitRequiredUnit::by_id(conn, unit.id as i16).is_err())
+            .filter_map(|unit| Unit::by_id(conn, unit.id as i16).ok())
+            .filter(|unit| unit.unit_type == 80)
+            .for_each(|unit| {
+                unit.update_root(conn)
+                    .expect("Unble to set root value on entity")
             });
     }
 

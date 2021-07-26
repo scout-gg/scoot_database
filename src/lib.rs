@@ -10,8 +10,6 @@ extern crate serde_derive;
 #[macro_use]
 extern crate lazy_static;
 
-use std::fs::File;
-
 pub mod db;
 pub mod game_data;
 pub mod model;

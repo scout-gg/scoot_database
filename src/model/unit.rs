@@ -68,7 +68,7 @@ impl Unit {
             .map_err(|err| eyre!("Unit with id {} not found : {}", id, err))
     }
 
-    pub fn set_root(&self, conn: &PgConnection) -> Result<()> {
+    pub fn update_root(&self, conn: &PgConnection) -> Result<()> {
         diesel::update(self)
             .set(self::is_root.eq(true))
             .execute(conn)

@@ -43,18 +43,33 @@ fn main() -> Result<()> {
 }
 
 fn units_to_db(conn: &PgConnection, values: &Ao2KeyValues) {
+    // Collect building ids referenced in the tech tree
+    let buildings = DAT
+        .0
+        .tech_tree
+        .building_connections
+        .iter()
+        .map(|building| building.id as i16)
+        .collect::<Vec<i16>>();
+
+    // Collect unit ids referenced in the tech tree
+    let units = DAT
+        .0
+        .tech_tree
+        .unit_connections
+        .iter()
+        .map(|unit| unit.id as i16)
+        .collect::<Vec<i16>>();
+
+    // Collect uniques unit or building ids referenced in civilisation tech trees and
+    // store them in the database
     DAT.get_unit_buildings()
         .iter()
-        .filter(|unit| unit.0.creatable.is_some())
+        .filter(|unit| units.contains(&unit.0.id) || buildings.contains(&unit.0.id))
         .map(|unit| unit.to_unit())
-        .for_each(|unit| {
-            println!(
-                "Unit or building converter to entity : {} - {:?}, {}",
-                unit.id, unit.name, unit.unit_type
-            );
-            if let Err(err) = Unit::insert(conn, values, &unit) {
-                eprintln!("{}", err);
-            }
+        .for_each(|unit| match Unit::insert(conn, values, &unit) {
+            Ok(unit) => println!("Inserted : {:?}", unit),
+            Err(err) => eprintln!("{}", err),
         });
 }
 
@@ -90,19 +105,21 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
     }
 
     DAT.update_root_units(conn);
+    DAT.update_root_buildings(conn);
     Tech::update_root_techs(conn).expect("An error occured updating root techs");
 
     // tag unique unit with their civ id
     let civ_tech_tree_data = std::fs::read_to_string("resources/civTechTrees.json")?;
     let civ_tech_tree_data: Ao2CivsTechTree = serde_json::from_str(&civ_tech_tree_data)?;
+
     civ_tech_tree_data
         .get_unique_units()
         .iter()
         .for_each(|(civ, unit)| {
-            Unit::by_id(conn, *unit)
-                .expect("Unable to get unique unit")
-                .set_unique(conn, *civ)
-                .expect("Unable to update unique unit");
+            if let Ok(unit) = Unit::by_id(conn, *unit) {
+                unit.set_unique(conn, *civ)
+                    .expect("Unable to update unique unit");
+            }
         });
 
     civ_tech_tree_data
@@ -113,15 +130,19 @@ fn links_to_db(conn: &PgConnection) -> Result<()> {
 }
 
 fn tech_to_db(conn: &PgConnection, values: &Ao2KeyValues) {
-    DAT.0.tech_table.techs.iter().enumerate().for_each(|(idx, tech)| {
-        let dat_tech = DatTech(tech);
-        let tech = dat_tech.to_tech(idx as i16);
-        if let Err(err) = Tech::insert_with_text(conn, values, &tech) {
-            eprintln!("Found tech with no text helper, inserting \"enable tech\" instead :  tech.id {}, tech.name_helper {:?}, err {}", idx, dat_tech.0.name.content, err);
-            let no_text_tech = dat_tech.to_enable_tech(idx as i16);
-            Tech::insert(conn, &no_text_tech).unwrap();
-        }
-    });
+    DAT.0
+        .tech_table
+        .techs
+        .iter()
+        .enumerate()
+        .for_each(|(idx, tech)| {
+            let dat_tech = DatTech(tech);
+            let tech = dat_tech.to_tech(idx as i16);
+            match Tech::insert_with_text(conn, values, &tech) {
+                Ok(tech) => println!("Inserted : {:?}", tech),
+                Err(err) => eprintln!("Failed to insert tech : {}", err),
+            };
+        });
 }
 
 // Extract game data before hydrating  the database
@@ -135,9 +156,9 @@ fn copy_game_files() -> Result<()> {
         let entry = entry?;
         match entry.file_name().to_str().unwrap() {
             "br" => std::fs::copy(
-                    format!("{}/{}", entry.path().to_str().unwrap(), key_value_locale),
-                    format!("{}/br", crate_resources),
-                )?,
+                format!("{}/{}", entry.path().to_str().unwrap(), key_value_locale),
+                format!("{}/br", crate_resources),
+            )?,
             "de" => std::fs::copy(
                 format!("{}/{}", entry.path().to_str().unwrap(), key_value_locale),
                 format!("{}/de", crate_resources),

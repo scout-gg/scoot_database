@@ -6,8 +6,6 @@ use aoe_djin::dat;
 use aoe_djin::dat::civilization::{Combatant, UnitType};
 use aoe_djin::dat::tech::ResourceCostType;
 use aoe_djin::dat::{DatFile, ResourceUsageType};
-use itertools::Itertools;
-use serde_json::Value;
 use std::collections::HashSet;
 
 pub struct DatFileWrapper(pub DatFile);
@@ -91,7 +89,7 @@ impl DatUnit<'_> {
         let help_idx = help_text_offset(self.0.language_dll_help);
 
         Unit {
-            id: self.0.base_id,
+            id: self.0.id,
             age: DAT.get_unit_age(self.0.base_id),
             unit_type: DatUnitType(&self.0.unit_type).into(),
             internal_name: self.0.name.content.clone(),

@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
-use eyre::{Report, Result};
+use eyre::Result;
 
 use crate::game_data::key_value::Ao2KeyValues;
 use crate::model::help_text::HelpText;
@@ -34,20 +34,22 @@ pub struct Tech {
 }
 
 impl Tech {
-    pub fn insert_with_text(conn: &PgConnection, values: &Ao2KeyValues, tech: &Tech) -> Result<()> {
+    pub fn insert_with_text(
+        conn: &PgConnection,
+        values: &Ao2KeyValues,
+        tech: &Tech,
+    ) -> Result<Tech> {
         let mut tech = tech.clone();
-        tech.name = HelpText::insert_from_values(conn, values, tech.name.unwrap())
-            .ok()
-            .map(|h| h.id);
+        let name = HelpText::insert_from_values(conn, values, tech.name.unwrap()).map(|h| h.id)?;
 
+        tech.name = Some(name);
         Tech::insert(conn, &tech)
     }
 
-    pub fn insert(conn: &PgConnection, tech: &Tech) -> Result<(), Report> {
+    pub fn insert(conn: &PgConnection, tech: &Tech) -> Result<Tech> {
         diesel::insert_into(technology::table)
             .values(tech)
-            .execute(conn)
-            .map(|_| ())
+            .get_result(conn)
             .map_err(|err| {
                 eyre!(
                     "Error inserting tech {:?} with id {}: {}",
@@ -65,7 +67,7 @@ impl Tech {
             .map_err(|err| eyre!("Tech with id {} not found : {}", id, err))
     }
 
-    pub fn set_root(&self, conn: &PgConnection) -> Result<()> {
+    pub fn update_root(&self, conn: &PgConnection) -> Result<()> {
         diesel::update(self)
             .set(self::is_root.eq(true))
             .execute(conn)
@@ -94,7 +96,7 @@ impl Tech {
         root_techs.iter().for_each(|id| {
             let tech =
                 Tech::by_id(conn, **id).expect("Unable to get tech while setting root value");
-            tech.set_root(conn).expect("Error setting root tech");
+            tech.update_root(conn).expect("Error setting root tech");
         });
         Ok(())
     }
@@ -104,6 +106,7 @@ impl Tech {
 mod test {
     use crate::db;
     use crate::model::tech::Tech;
+
     #[test]
     fn should_join_root_tech() {
         let db = db::establish_connection();

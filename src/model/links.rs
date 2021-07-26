@@ -1,4 +1,4 @@
-use diesel::{PgConnection, RunQueryDsl};
+use diesel::{ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use eyre::Result;
 
 use crate::schema::civ_tech;
@@ -62,6 +62,10 @@ impl TechRequiredTech {
                     err
                 )
             })
+            .map(|requirement| {
+                println!("{:?}", requirement);
+                requirement
+            })
     }
 }
 
@@ -77,6 +81,17 @@ impl UnitRequiredTech {
                     err
                 )
             })
+            .map(|requirement| {
+                println!("{:?}", requirement);
+                requirement
+            })
+    }
+
+    pub fn by_id(conn: &PgConnection, id: i16) -> Result<UnitRequiredTech> {
+        unit_required_tech::table
+            .filter(unit_required_tech::unit.eq(id))
+            .first(conn)
+            .map_err(|err| eyre!("Tech with id {} not found : {}", id, err))
     }
 }
 
@@ -92,6 +107,17 @@ impl UnitRequiredUnit {
                     err
                 )
             })
+            .map(|requirement| {
+                println!("{:?}", requirement);
+                requirement
+            })
+    }
+
+    pub fn by_id(conn: &PgConnection, id: i16) -> Result<UnitRequiredUnit> {
+        unit_required_unit::table
+            .filter(unit_required_unit::unit.eq(id))
+            .first(conn)
+            .map_err(|err| eyre!("Tech with id {} not found : {}", id, err))
     }
 }
 
@@ -107,6 +133,10 @@ impl TechRequiredUnit {
                     err
                 )
             })
+            .map(|requirement| {
+                println!("Inserted {:?}", requirement);
+                requirement
+            })
     }
 }
 
@@ -116,6 +146,10 @@ impl CivTech {
             .values(self.clone())
             .get_result(conn)
             .map_err(|err| eyre!("Error inserting civ_tech {:?} : {}", &self, err))
+            .map(|tech| {
+                println!("Inserted {:?}", tech);
+                tech
+            })
     }
 }
 
@@ -125,5 +159,9 @@ impl CivUnit {
             .values(self.clone())
             .get_result(conn)
             .map_err(|err| eyre!("Error inserting civ_tech {:?} : {}", &self, err))
+            .map(|unit| {
+                println!("Inserted {:?}", unit);
+                unit
+            })
     }
 }
